@@ -5,15 +5,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const badgesContainer = document.getElementById('badges-container');
     const shareBtn = document.getElementById('share-btn');
     const themeSelect = document.getElementById('theme-select');
+    const currentUser = localStorage.getItem('currentUser');
     let questions = [];
     let currentQuestionIndex = 0;
-    let points = parseInt(localStorage.getItem('points')) || 0;
-    let correctAnswers = parseInt(localStorage.getItem('correctAnswers')) || 0;
-    let badges = JSON.parse(localStorage.getItem('badges')) || [];
-    let themes = JSON.parse(localStorage.getItem('themes')) || ['default'];
-    let currentTheme = localStorage.getItem('currentTheme') || 'default';
-    let lastPlayed = localStorage.getItem('lastPlayed');
-    let streak = parseInt(localStorage.getItem('streak')) || 0;
+    let points = parseInt(localStorage.getItem(`points_${currentUser}`)) || 0;
+    let correctAnswers = parseInt(localStorage.getItem(`correctAnswers_${currentUser}`)) || 0;
+    let badges = JSON.parse(localStorage.getItem(`badges_${currentUser}`)) || [];
+    let themes = JSON.parse(localStorage.getItem(`themes_${currentUser}`)) || ['default'];
+    let currentTheme = localStorage.getItem(`currentTheme_${currentUser}`) || 'default';
+    let lastPlayed = localStorage.getItem(`lastPlayed_${currentUser}`);
+    let streak = parseInt(localStorage.getItem(`streak_${currentUser}`)) || 0;
 
     // Update points display
     function updatePointsDisplay() {
@@ -22,14 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check and update streak with bonuses and warning
     function updateStreak() {
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const today = new Date().toISOString().split('T')[0];
         if (lastPlayed) {
             const last = new Date(lastPlayed);
             const todayDate = new Date(today);
             const diffDays = Math.floor((todayDate - last) / (1000 * 60 * 60 * 24));
             if (diffDays === 1) {
                 streak += 1;
-                // Apply streak bonuses
                 if (streak === 5) {
                     points += 50;
                     resultsContainer.innerHTML += '<p class="text-success">Streak Bonus: +50 points for 5 days!</p>';
@@ -44,14 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (streak > 1) {
                     resultsContainer.innerHTML += '<p class="text-warning">Streak reset to 1 day—play tomorrow to keep it going!</p>';
                 }
-                streak = 1; // Reset if gap > 1 day
+                streak = 1;
             }
         } else {
-            streak = 1; // First play
+            streak = 1;
         }
-        localStorage.setItem('lastPlayed', today);
-        localStorage.setItem('streak', streak);
-        localStorage.setItem('points', points); // Save bonus points
+        localStorage.setItem(`lastPlayed_${currentUser}`, today);
+        localStorage.setItem(`streak_${currentUser}`, streak);
+        localStorage.setItem(`points_${currentUser}`, points);
         checkStreakBadges();
         updatePointsDisplay();
     }
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         badgeDefinitions.forEach(badge => {
             if (correctAnswers >= badge.correctNeeded && !badges.includes(badge.name)) {
                 badges.push(badge.name);
-                localStorage.setItem('badges', JSON.stringify(badges));
+                localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info">Unlocked badge: ${badge.name}!</p>`;
             }
         });
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         streakBadgeDefinitions.forEach(badge => {
             if (streak >= badge.streakNeeded && !badges.includes(badge.name)) {
                 badges.push(badge.name);
-                localStorage.setItem('badges', JSON.stringify(badges));
+                localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info">Unlocked badge: ${badge.name}!</p>`;
             }
         });
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         themeDefinitions.forEach(theme => {
             if (points >= theme.pointsNeeded && !themes.includes(theme.name)) {
                 themes.push(theme.name);
-                localStorage.setItem('themes', JSON.stringify(themes));
+                localStorage.setItem(`themes_${currentUser}`, JSON.stringify(themes));
                 resultsContainer.innerHTML += `<p class="text-info">Unlocked theme: ${theme.description}!</p>`;
             }
         });
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     .sort(() => Math.random() - 0.5),
                 correct_answer: decodeHTML(q.correct_answer)
             }));
-            updateStreak(); // Check/update streak on load
+            updateStreak();
             displayQuestion();
             displayBadges();
             updatePointsDisplay();
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </form>
         `;
 
-        document.getElementById('quiz-form').addEventListener('submit', e => {
+        document.getElementById('quiz-form').addEventListener('submit', (e) => {
             e.preventDefault();
             checkAnswer();
         });
@@ -236,8 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
             points += 5;
             resultsContainer.innerHTML = `<p class="text-warning">Incorrect. Correct answer: ${correctAnswer}. +5 points</p>`;
         }
-        localStorage.setItem('points', points);
-        localStorage.setItem('correctAnswers', correctAnswers);
+        localStorage.setItem(`points_${currentUser}`, points);
+        localStorage.setItem(`correctAnswers_${currentUser}`, correctAnswers);
         updatePointsDisplay();
         checkBadges();
         checkThemes();
