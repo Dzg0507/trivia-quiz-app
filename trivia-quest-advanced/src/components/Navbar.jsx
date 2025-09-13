@@ -12,6 +12,8 @@ const Navbar = () => {
         <div className="space-x-4">
           {currentUser && (
             <>
+              <Link to="/" className="text-white hover:text-trivia-gold transition">Galaxy Map</Link>
+              <Link to="/skills" className="text-white hover:text-trivia-gold transition">Skills</Link>
               <Link to="/quests" className="text-white hover:text-trivia-gold transition">Quests</Link>
               <Link to="/achievements" className="text-white hover:text-trivia-gold transition">Achievements</Link>
               <Link to="/profile" className="text-white hover:text-trivia-gold transition">Profile</Link>

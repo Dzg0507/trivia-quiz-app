@@ -1,13 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuizFlow } from '../hooks/useQuizFlow';
-import { FaTrophy, FaHourglassHalf, FaRedo } from 'react-icons/fa';
+import { FaTrophy, FaHourglassHalf, FaRedo, FaBrain, FaGem } from 'react-icons/fa';
+import LoadingSpinner from './common/LoadingSpinner';
 
 const Quiz = () => {
   const {
     questions,
     currentQuestionIndex,
-    score,
+    pointsThisQuiz,
     timeLeft,
     isAnswered,
     isQuizOver,
@@ -16,14 +17,13 @@ const Quiz = () => {
     allAnswers,
     handleAnswer,
     loadQuestions,
+    unlockedSkills,
+    useMindReader,
+    mindReaderUsed,
   } = useQuizFlow();
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <FaHourglassHalf className="animate-spin text-4xl text-white" />
-      </div>
-    );
+    return <LoadingSpinner text="Preparing Questions..." />;
   }
 
   if (isQuizOver) {
@@ -34,7 +34,7 @@ const Quiz = () => {
         className="text-center text-white"
       >
         <h2 className="text-3xl font-bold mb-4">Quiz Over!</h2>
-        <p className="text-xl mb-4">You scored {score} out of {questions.length}</p>
+        <p className="text-xl mb-4">You scored {pointsThisQuiz} points in this quiz!</p>
         <button
           onClick={loadQuestions}
           className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full flex items-center justify-center mx-auto"
@@ -45,6 +45,8 @@ const Quiz = () => {
       </motion.div>
     );
   }
+
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
     <AnimatePresence>
@@ -61,7 +63,7 @@ const Quiz = () => {
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center space-x-2 text-lg font-semibold text-white">
                 <FaTrophy className="text-yellow-400" />
-                <span>Score: {score}</span>
+                <span>Score: {pointsThisQuiz}</span>
               </div>
               <div className="flex items-center space-x-2 text-lg font-semibold text-white">
                 <FaHourglassHalf className="text-red-400" />
@@ -82,7 +84,7 @@ const Quiz = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   disabled={isAnswered}
-                  onClick={() => handleAnswer(answer)}
+                  onClick={() => handleAnswer(answer, isLastQuestion && unlockedSkills.includes('double_or_nothing'))}
                   className={`w-full p-4 rounded-lg text-white font-semibold transition-all duration-300
                     ${isAnswered
                       ? answer === currentQuestion.correct_answer
@@ -93,6 +95,23 @@ const Quiz = () => {
                   dangerouslySetInnerHTML={{ __html: answer }}
                 />
               ))}
+            </div>
+            <div className="mt-4 flex justify-center space-x-4">
+              {unlockedSkills.includes('mind_reader') && !mindReaderUsed && !isAnswered && (
+                <button
+                  onClick={useMindReader}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full flex items-center"
+                >
+                  <FaBrain className="mr-2" />
+                  Use Mind Reader
+                </button>
+              )}
+              {isLastQuestion && unlockedSkills.includes('double_or_nothing') && !isAnswered && (
+                <p className="text-yellow-400 font-bold flex items-center">
+                  <FaGem className="mr-2" />
+                  Double or Nothing is active!
+                </p>
+              )}
             </div>
           </div>
         </motion.div>

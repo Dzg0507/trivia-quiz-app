@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUserStats } from './useUserStats';
-
-const quests = [
-  { id: 'daily_login', name: 'Daily Login', description: 'Log in for the first time today.', condition: (stats) => stats.logins_today >= 1 },
-  { id: 'play_3_games', name: 'Trivia Enthusiast', description: 'Play 3 games of trivia.', condition: (stats) => stats.games_played >= 3 },
-  { id: 'score_100', name: 'High Scorer', description: 'Score 100 points in a single game.', condition: (stats) => stats.high_score >= 100 },
-];
+import { quests } from '../config/gamification';
 
 export const useQuestManager = () => {
   const { userStats } = useUserStats();

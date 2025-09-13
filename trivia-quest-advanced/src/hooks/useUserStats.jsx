@@ -22,16 +22,45 @@ export const useUserStats = () => {
     loadUserStats();
   }, [loadUserStats]);
 
-  const updateUserStats = useCallback(async (newStats) => {
+  const updateUserStats = useCallback(async (statsUpdate) => {
     if (!currentUser) return;
-    const currentStats = await firestoreService.getUserData(currentUser);
-    const updatedStats = {
-      ...currentStats,
-      ...newStats,
-      points: (currentStats.points || 0) + (newStats.score || 0),
-      questionsAttempted: (currentStats.questionsAttempted || 0) + (newStats.questionsAttempted || 0),
-    };
-    await firestoreService.setUserData(currentUser, updatedStats);
+
+    await firestoreService.updateUserDataInTransaction(currentUser, (currentStats) => {
+      const newStats = {
+        ...currentStats,
+        points: (currentStats.points || 0) + (statsUpdate.score || 0),
+        questionsAttempted: (currentStats.questionsAttempted || 0) + (statsUpdate.questionsAttempted || 0),
+        correctAnswers: (currentStats.correctAnswers || 0) + (statsUpdate.correctAnswers || 0),
+        incorrectAnswers: (currentStats.incorrectAnswers || 0) + (statsUpdate.incorrectAnswers || 0),
+
+        // Streak
+        currentStreak: statsUpdate.correct ? (currentStats.currentStreak || 0) + 1 : 0,
+        maxStreak: Math.max(currentStats.maxStreak || 0, statsUpdate.correct ? (currentStats.currentStreak || 0) + 1 : 0),
+
+        // Categories
+        correctAnswersByCategory: { ...(currentStats.correctAnswersByCategory || {}) },
+        categoriesPlayed: [...(currentStats.categoriesPlayed || [])],
+
+        // Power-ups
+        powerUpsUsed: { ...(currentStats.powerUpsUsed || {}) },
+
+        // Quests
+        fastAnswers: (currentStats.fastAnswers || 0) + (statsUpdate.fastAnswers || 0),
+        perfectQuizzes: (currentStats.perfectQuizzes || 0) + (statsUpdate.perfectQuizzes || 0),
+      };
+
+      // Conditionally add properties to avoid creating 'undefined' keys
+      if (statsUpdate.powerUp) {
+        newStats.powerUpsUsed[statsUpdate.powerUp] = (newStats.powerUpsUsed[statsUpdate.powerUp] || 0) + 1;
+      }
+      if (statsUpdate.category) {
+        newStats.correctAnswersByCategory[statsUpdate.category] = (newStats.correctAnswersByCategory[statsUpdate.category] || 0) + (statsUpdate.correct ? 1 : 0);
+        newStats.categoriesPlayed = Array.from(new Set([...(newStats.categoriesPlayed || []), statsUpdate.category]));
+      }
+
+      return newStats;
+    });
+
     await loadUserStats();
   }, [currentUser, loadUserStats]);
 
