@@ -9,35 +9,50 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
-<body>
-    <div class="container mt-4" id="profile-container">
-        <h1 class="profile-title animate__animated animate__bounceIn">My Trivia Profile</h1>
-        <div id="profile-content" class="card p-4 animate__animated animate__fadeIn">
-            <div class="mb-3">
-                <label for="bgColor" class="form-label">Background Color</label>
-                <input type="color" class="form-control form-control-color" id="bgColor" value="#ffffff">
+<body class="bg-gradient">
+    <div class="container mt-4">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 rounded">
+            <a class="navbar-brand" href="index.html">Trivia Quest</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="quests.html">Quests</a></li>
+                </ul>
             </div>
-            <div class="mb-3">
-                <label for="avatar" class="form-label">Avatar</label>
-                <select id="avatar" class="form-select">
-                    <option value="👤">Default (👤)</option>
-                    <option value="🎮">Gamer (🎮)</option>
-                    <option value="⭐">Star (⭐)</option>
-                    <option value="🌟">Sparkle (🌟)</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label for="bio" class="form-label">Bio</label>
-                <textarea id="bio" class="form-control" rows="3" placeholder="Tell us about yourself!"></textarea>
-            </div>
-            <button id="saveProfile" class="btn btn-primary animate__animated animate__pulse">Save Profile</button>
-            <button id="shareProfile" class="btn btn-success ms-2 animate__animated animate__pulse">Share Profile</button>
-            <div id="stats" class="mt-4">
-                <h4>Stats</h4>
-                <p>Points: <span id="points">0</span></p>
-                <p>Correct Answers: <span id="correctAnswers">0</span></p>
-                <p>Streak: <span id="streak">0</span> days</p>
-                <div id="badges" class="mt-3"></div>
+        </nav>
+        <div class="card p-4 shadow-lg bg-dark text-white rounded animate__animated animate__fadeIn">
+            <h1 class="text-warning mb-4">My Trivia Profile</h1>
+            <div id="profile-content">
+                <div class="mb-3">
+                    <label for="bgColor" class="form-label text-info">Background Color</label>
+                    <input type="color" class="form-control form-control-color" id="bgColor" value="#ffffff">
+                </div>
+                <div class="mb-3">
+                    <label for="avatar" class="form-label text-info">Avatar</label>
+                    <select id="avatar" class="form-select bg-secondary text-white">
+                        <option value="👤">Default (👤)</option>
+                        <option value="🎮">Gamer (🎮)</option>
+                        <option value="⭐">Star (⭐)</option>
+                        <option value="🌟">Sparkle (🌟)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="bio" class="form-label text-info">Bio</label>
+                    <textarea id="bio" class="form-control bg-secondary text-white" rows="3" placeholder="Tell us about yourself!"></textarea>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="saveProfile" class="btn btn-primary animate__animated animate__pulse">Save Profile</button>
+                    <button id="shareProfile" class="btn btn-success animate__animated animate__pulse">Share Profile</button>
+                </div>
+                <div id="stats" class="mt-4">
+                    <h4 class="text-info">Stats</h4>
+                    <p>Points: <span id="points" class="text-warning">0</span></p>
+                    <p>Correct Answers: <span id="correctAnswers" class="text-warning">0</span></p>
+                    <p>Streak: <span id="streak" class="text-warning">0</span> days</p>
+                    <div id="badges" class="mt-3 d-flex flex-wrap gap-2"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -55,7 +70,6 @@
         const streak = document.getElementById('streak');
         const badges = document.getElementById('badges');
 
-        // Load profile data
         function loadProfile() {
             const profile = JSON.parse(localStorage.getItem(`profile_${currentUser}`)) || {};
             profileContent.style.backgroundColor = profile.bgColor || '#ffffff';
@@ -66,28 +80,18 @@
             correctAnswers.textContent = localStorage.getItem(`correctAnswers_${currentUser}`) || 0;
             streak.textContent = localStorage.getItem(`streak_${currentUser}`) || 0;
             const userBadges = JSON.parse(localStorage.getItem(`badges_${currentUser}`)) || [];
-            badges.innerHTML = userBadges.length ? userBadges.map(b => `<span class="badge bg-info me-1">${b}</span>`).join('') : 'No badges yet!';
+            badges.innerHTML = userBadges.length ? userBadges.map(b => `<span class="badge bg-info animate__animated animate__bounce">${b}</span>`).join('') : 'No badges yet!';
         }
 
-        // Save profile
         saveProfile.addEventListener('click', () => {
-            const profile = {
-                bgColor: bgColor.value,
-                avatar: avatar.value,
-                bio: bio.value
-            };
+            const profile = { bgColor: bgColor.value, avatar: avatar.value, bio: bio.value };
             localStorage.setItem(`profile_${currentUser}`, JSON.stringify(profile));
             profileContent.style.backgroundColor = bgColor.value;
             badges.innerHTML += '<span class="badge bg-success animate__animated animate__tada">Profile Saved!</span>';
             setTimeout(() => badges.querySelector('.bg-success')?.remove(), 2000);
-            confetti({
-                particleCount: 100,
-                spread: 70,
-                origin: { y: 0.6 }
-            });
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
         });
 
-        // Share profile
         shareProfile.addEventListener('click', () => {
             const profileData = {
                 user: currentUser,
@@ -109,20 +113,19 @@
             }
         });
 
-        // Handle shared profile view
         const urlParams = new URLSearchParams(window.location.search);
         const viewUser = urlParams.get('user');
         if (viewUser && viewUser !== currentUser) {
             const viewedProfile = JSON.parse(localStorage.getItem(`profile_${viewUser}`)) || {};
             profileContent.style.backgroundColor = viewedProfile.bgColor || '#ffffff';
-            document.querySelector('.profile-title').textContent = `${viewUser}'s Trivia Profile`;
+            document.querySelector('h1').textContent = `${viewUser}'s Trivia Profile`;
             bio.value = viewedProfile.bio || 'No bio set.';
             avatar.value = viewedProfile.avatar || '👤';
             points.textContent = localStorage.getItem(`points_${viewUser}`) || 0;
             correctAnswers.textContent = localStorage.getItem(`correctAnswers_${viewUser}`) || 0;
             streak.textContent = localStorage.getItem(`streak_${viewUser}`) || 0;
             const viewBadges = JSON.parse(localStorage.getItem(`badges_${viewUser}`)) || [];
-            badges.innerHTML = viewBadges.length ? viewBadges.map(b => `<span class="badge bg-info me-1">${b}</span>`).join('') : 'No badges yet!';
+            badges.innerHTML = viewBadges.length ? viewBadges.map(b => `<span class="badge bg-info animate__animated animate__bounce">${b}</span>`).join('') : 'No badges yet!';
             saveProfile.style.display = 'none';
             shareProfile.style.display = 'none';
         } else {

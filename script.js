@@ -1,4 +1,3 @@
-// Trivia Quiz Game Logic
 document.addEventListener('DOMContentLoaded', () => {
     const quizContainer = document.getElementById('quiz-container');
     const resultsContainer = document.getElementById('results-container');
@@ -16,12 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastPlayed = localStorage.getItem(`lastPlayed_${currentUser}`);
     let streak = parseInt(localStorage.getItem(`streak_${currentUser}`)) || 0;
 
-    // Update points display
     function updatePointsDisplay() {
         document.getElementById('points').textContent = points;
     }
 
-    // Check and update streak with bonuses and warning
     function updateStreak() {
         const today = new Date().toISOString().split('T')[0];
         if (lastPlayed) {
@@ -56,28 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePointsDisplay();
     }
 
-    // Badge definitions
     const badgeDefinitions = [
         { name: 'Beginner', correctNeeded: 10, description: 'Answer 10 questions correctly' },
         { name: 'Trivia Star', correctNeeded: 25, description: 'Answer 25 questions correctly' },
         { name: 'Quiz Master', correctNeeded: 50, description: 'Answer 50 questions correctly' }
     ];
 
-    // Challenge badge definitions
     const challengeBadgeDefinitions = [
         { name: 'Daily Challenger', correctNeeded: 5, period: 'daily', description: 'Complete 5 correct answers daily' },
         { name: 'Weekly Warrior', correctNeeded: 20, period: 'weekly', description: 'Complete 20 correct answers weekly' },
         { name: 'Monthly Master', correctNeeded: 50, period: 'monthly', description: 'Complete 50 correct answers monthly' }
     ];
 
-    // Streak badge definitions
     const streakBadgeDefinitions = [
         { name: 'Streak Starter', streakNeeded: 3, description: 'Play 3 days in a row' },
         { name: 'Streak Legend', streakNeeded: 7, description: 'Play 7 days in a row' },
         { name: 'Streak Master', streakNeeded: 15, description: 'Play 15 days in a row' }
     ];
 
-    // Check and award badges
     function checkBadges() {
         badgeDefinitions.forEach(badge => {
             if (correctAnswers >= badge.correctNeeded && !badges.includes(badge.name)) {
@@ -85,17 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         displayBadges();
     }
 
-    // Check and award challenge badges
     function checkChallengeBadges() {
         const today = new Date().toISOString().split('T')[0];
         const thisWeek = new Date().toLocaleDateString('en-US', { week: 'long' });
@@ -111,11 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         localStorage.setItem(`dailyStats_${currentUser}_${today}`, JSON.stringify(dailyStats));
@@ -124,7 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
         displayBadges();
     }
 
-    // Check and award streak badges
     function checkStreakBadges() {
         streakBadgeDefinitions.forEach(badge => {
             if (streak >= badge.streakNeeded && !badges.includes(badge.name)) {
@@ -132,17 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({
-                    particleCount: 100,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         displayBadges();
     }
 
-    // Check and unlock themes
     function checkThemes() {
         const themeDefinitions = [
             { name: 'default', pointsNeeded: 0, description: 'Default Theme' },
@@ -160,34 +138,31 @@ document.addEventListener('DOMContentLoaded', () => {
         updateThemeSelector();
     }
 
-    // Update theme selector dropdown
     function updateThemeSelector() {
         themeSelect.innerHTML = themes.map(theme => `
             <option value="${theme}" ${theme === currentTheme ? 'selected' : ''}>
                 ${themeDefinitions.find(t => t.name === theme).description}
             </option>
         `).join('');
-        document.body.className = `${currentTheme}-theme`;
+        document.body.className = `${currentTheme}-theme bg-gradient`;
     }
 
-    // Display badges
     function displayBadges() {
         badgesContainer.classList.remove('d-none');
         badgesContainer.innerHTML = `
-            <h4 class="badge-title">Your Badges</h4>
+            <h4 class="badge-title text-info">Your Badges</h4>
             <div class="d-flex flex-wrap badge-container">
                 ${badges.length ? badges.map(badge => `
                     <div class="badge-card m-2 p-2 border rounded animate__animated animate__fadeIn">
-                        <strong>${badge}</strong>
-                        <p>${badgeDefinitions.find(b => b.name === badge)?.description || challengeBadgeDefinitions.find(b => b.name === badge)?.description || streakBadgeDefinitions.find(b => b.name === badge).description}</p>
+                        <strong class="text-warning">${badge}</strong>
+                        <p class="text-white">${badgeDefinitions.find(b => b.name === badge)?.description || challengeBadgeDefinitions.find(b => b.name === badge)?.description || streakBadgeDefinitions.find(b => b.name === badge).description}</p>
                     </div>
-                `).join('') : '<p>No badges yet. Keep playing!</p>'}
+                `).join('') : '<p class="text-white">No badges yet. Keep playing!</p>'}
             </div>
-            <p>Current Streak: <span class="streak-text">${streak}</span> days</p>
+            <p class="text-white">Current Streak: <span class="streak-text text-warning">${streak}</span> days</p>
         `;
     }
 
-    // Fetch questions from Open Trivia DB with fallback
     async function fetchQuestions() {
         try {
             const response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
@@ -202,12 +177,11 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStats();
             displayQuestion();
         } catch (error) {
-            quizContainer.innerHTML = `<p>Error loading questions: ${error.message}. Retrying in 5 seconds...</p>`;
+            quizContainer.innerHTML = `<p class="text-danger">Error loading questions: ${error.message}. Retrying in 5 seconds...</p>`;
             setTimeout(fetchQuestions, 5000);
         }
     }
 
-    // Update challenge stats
     function updateStats() {
         const today = new Date().toISOString().split('T')[0];
         const thisWeek = new Date().toLocaleDateString('en-US', { week: 'long' });
@@ -224,25 +198,23 @@ document.addEventListener('DOMContentLoaded', () => {
         checkChallengeBadges();
     }
 
-    // Decode HTML entities
     function decodeHTML(html) {
         const txt = document.createElement('textarea');
         txt.innerHTML = html;
         return txt.value;
     }
 
-    // Display current question with animation
     function displayQuestion() {
         if (currentQuestionIndex >= questions.length) {
-            quizContainer.innerHTML = '<p class="animate__animated animate__bounceIn">Quiz complete! Check your points.</p>';
+            quizContainer.innerHTML = '<p class="text-white animate__animated animate__bounceIn">Quest complete! Check your points.</p>';
             const affiliateLinks = `
-                <p>Love trivia? Check out these:</p>
-                <ul>
-                    <li><a href="https://www.amazon.com/dp/B08N5G1L5P?tag=youraffiliateid-20" target="_blank">Trivia Book 1</a></li>
-                    <li><a href="https://www.amazon.com/dp/B09XJ7R2K8?tag=youraffiliateid-20" target="_blank">Trivia Game Set</a></li>
+                <p class="text-white">Love trivia? Check out these:</p>
+                <ul class="text-white">
+                    <li><a href="https://www.amazon.com/dp/B08N5G1L5P?tag=youraffiliateid-20" target="_blank" class="text-info">Trivia Book 1</a></li>
+                    <li><a href="https://www.amazon.com/dp/B09XJ7R2K8?tag=youraffiliateid-20" target="_blank" class="text-info">Trivia Game Set</a></li>
                 </ul>
             `;
-            resultsContainer.innerHTML = `<p>Total Points: <span class="points-text">${points}</span></p>${affiliateLinks}`;
+            resultsContainer.innerHTML = `<p class="text-white">Total Points: <span class="points-text text-warning">${points}</span></p>${affiliateLinks}`;
             resultsContainer.classList.remove('d-none');
             shareBtn.classList.remove('d-none');
             return;
@@ -264,12 +236,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const q = questions[currentQuestionIndex];
         quizContainer.innerHTML = `
-            <h3 class="question-title animate__animated animate__zoomIn">${q.question}</h3>
+            <h3 class="question-title text-white animate__animated animate__zoomIn">${q.question}</h3>
             <form id="quiz-form">
                 ${q.answers.map((answer, index) => `
                     <div class="form-check answer-option animate__animated animate__fadeInUp" style="animation-delay: ${index * 0.2}s">
                         <input class="form-check-input" type="radio" name="answer" id="answer${index}" value="${answer}">
-                        <label class="form-check-label" for="answer${index}">${answer}</label>
+                        <label class="form-check-label text-white" for="answer${index}">${answer}</label>
                     </div>
                 `).join('')}
                 <button type="submit" class="btn btn-primary mt-3 animate__animated animate__pulse">Submit</button>
@@ -282,7 +254,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Check answer and update points
     function checkAnswer() {
         const selectedAnswer = document.querySelector('input[name="answer"]:checked');
         if (!selectedAnswer) {
@@ -310,13 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(displayQuestion, 1000);
     }
 
-    // Share score and badges
     shareBtn.addEventListener('click', () => {
         const badgeText = badges.length ? `Unlocked badges: ${badges.join(', ')}` : 'No badges yet';
         if (navigator.share) {
             navigator.share({
                 title: 'My Trivia Score',
-                text: `I scored ${points} points in Trivia Quiz! ${badgeText}. Streak: ${streak} days. Try it:`,
+                text: `I scored ${points} points in Trivia Quest! ${badgeText}. Streak: ${streak} days. Try it:`,
                 url: window.location.href
             }).catch(err => console.error('Share failed:', err));
         } else {
@@ -324,7 +294,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Start the quiz
     updateStreak();
     fetchQuestions();
 });
