@@ -1,67 +1,81 @@
 import { useState, useEffect, useCallback } from 'react';
 import { triviaApiService } from '../services/triviaApi';
+import { useUserStats } from './useUserStats';
 import { useNotifications } from '../context/NotificationContext';
 
-export const useQuizFlow = (onAnswerCallback, onQuizCompleteCallback) => {
+export const useQuizFlow = () => {
   const [questions, setQuestions] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(15);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [isQuizOver, setIsQuizOver] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const { updateUserStats, loading: userStatsLoading } = useUserStats();
   const { addNotification } = useNotifications();
 
-  const fetchQuestions = useCallback(async () => {
+  const loadQuestions = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
-    try {
-      const fetchedQuestions = await triviaApiService.fetchQuestions();
-      setQuestions(fetchedQuestions);
-      setCurrentIndex(0);
-    } catch (err) {
-      setError(err.message);
-      addNotification(`Error loading questions: ${err.message}`, 'error', 5000);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addNotification]);
+    setIsQuizOver(false);
+    setScore(0);
+    setCurrentQuestionIndex(0);
+    const fetchedQuestions = await triviaApiService.fetchQuestions();
+    setQuestions(fetchedQuestions);
+    setIsLoading(false);
+    setTimeLeft(15);
+    setIsAnswered(false);
+  }, []);
 
   useEffect(() => {
-    fetchQuestions();
-  }, [fetchQuestions]);
+    loadQuestions();
+  }, [loadQuestions]);
 
-  const handleAnswer = useCallback(
-    (selectedAnswer) => {
-      const currentQuestion = questions[currentIndex];
-      if (!currentQuestion) return;
-      const isCorrect = selectedAnswer === currentQuestion.correct_answer;
-      onAnswerCallback(isCorrect); // Notify parent/stats hook about the answer
-      setTimeout(() => {
-        if (currentIndex + 1 < questions.length) {
-          setCurrentIndex((prev) => prev + 1);
-        } else {
-          onQuizCompleteCallback();
-        }
-      }, 1000); // Delay for visual feedback
-    },
-    [questions, currentIndex, onAnswerCallback, onQuizCompleteCallback]
-  );
+  useEffect(() => {
+    if (timeLeft > 0 && !isAnswered && !isQuizOver) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && !isAnswered && !isQuizOver) {
+      handleAnswer(null);
+    }
+  }, [timeLeft, isAnswered, isQuizOver]);
 
-  const resetQuiz = useCallback(() => {
-    setQuestions([]);
-    setCurrentIndex(0);
-    fetchQuestions();
-  }, [fetchQuestions]);
+  const handleAnswer = (selectedAnswer) => {
+    setIsAnswered(true);
+    const correctAnswer = questions[currentQuestionIndex].correct_answer;
+    if (selectedAnswer === correctAnswer) {
+      setScore(score + 1);
+      addNotification('Correct!', 'success');
+    } else {
+      addNotification(`Wrong! The correct answer was ${correctAnswer}`, 'error');
+    }
 
-  const currentQuestion = questions[currentIndex];
-  const quizCompleted = currentIndex >= questions.length && questions.length > 0;
+    setTimeout(() => {
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setTimeLeft(15);
+        setIsAnswered(false);
+      } else {
+        setIsQuizOver(true);
+        updateUserStats({ score: score + (selectedAnswer === correctAnswer ? 1 : 0), questionsAttempted: questions.length });
+      }
+    }, 2000);
+  };
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const allAnswers = currentQuestion ? currentQuestion.answers : [];
 
   return {
-    isLoading,
-    error,
+    questions,
+    currentQuestionIndex,
+    score,
+    timeLeft,
+    isAnswered,
+    isQuizOver,
+    isLoading: isLoading || userStatsLoading,
     currentQuestion,
-    currentIndex,
-    questionsLength: questions.length,
+    allAnswers,
     handleAnswer,
-    resetQuiz,
-    quizCompleted,
+    loadQuestions,
   };
 };

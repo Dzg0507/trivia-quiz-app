@@ -1,37 +1,32 @@
-import { useCallback } from 'react';
-import { useNotifications } from '../context/NotificationContext';
-import { ACHIEVEMENT_DEFINITIONS } from '../config/gameConfig';
-export const useAchievementManager = (currentUser, achievements, points, correctAnswers, streak, saveUserData) => {
-  const { addNotification } = useNotifications();
-  const awardAchievement = useCallback((achievementId, reward) => {
-    if (!currentUser || achievements.includes(achievementId)) {
-      return false;
-    }
-    const newAchievements = [...achievements, achievementId];
-    saveUserData({ achievements: newAchievements, points: points + reward });
-    addNotification(
-      `Achievement Unlocked: ${ACHIEVEMENT_DEFINITIONS.find(a => a.id === achievementId)?.name || achievementId}!`,
-      'success'
-    );
-    return true;
-  }, [currentUser, achievements, points, saveUserData, addNotification]);
-  const checkAllAchievements = useCallback(() => {
-    ACHIEVEMENT_DEFINITIONS.forEach(ach => {
-      let isAchieved = false;
-      if (ach.type === 'points') {
-        isAchieved = points >= ach.threshold;
-      } else if (ach.type === 'correctAnswers') {
-        isAchieved = correctAnswers >= ach.threshold;
-      } else if (ach.type === 'streak') {
-        isAchieved = streak >= ach.threshold;
-      }
-      if (isAchieved) {
-        awardAchievement(ach.id, ach.reward);
+import { useState, useEffect, useCallback } from 'react';
+import { useUserStats } from './useUserStats';
+
+const achievements = [
+  { id: 'correct_1', name: 'Novice', description: 'Answer 1 question correctly.', condition: (stats) => stats.points >= 1 },
+  { id: 'correct_10', name: 'Apprentice', description: 'Answer 10 questions correctly.', condition: (stats) => stats.points >= 10 },
+  { id: 'correct_50', name: 'Adept', description: 'Answer 50 questions correctly.', condition: (stats) => stats.points >= 50 },
+  { id: 'attempt_10', name: 'Getting Started', description: 'Attempt 10 questions.', condition: (stats) => stats.questionsAttempted >= 10 },
+  { id: 'attempt_100', name: 'Persistent', description: 'Attempt 100 questions.', condition: (stats) => stats.questionsAttempted >= 100 },
+];
+
+export const useAchievementManager = () => {
+  const { userStats } = useUserStats();
+  const [unlockedAchievements, setUnlockedAchievements] = useState([]);
+
+  const checkAchievements = useCallback(() => {
+    if (!userStats) return;
+    const newUnlocked = [];
+    achievements.forEach((achievement) => {
+      if (achievement.condition(userStats)) {
+        newUnlocked.push(achievement.id);
       }
     });
-  }, [points, correctAnswers, streak, awardAchievement]);
-  return {
-    awardAchievement,
-    checkAllAchievements,
-  };
+    setUnlockedAchievements(newUnlocked);
+  }, [userStats]);
+
+  useEffect(() => {
+    checkAchievements();
+  }, [checkAchievements]);
+
+  return { achievements, unlockedAchievements };
 };
