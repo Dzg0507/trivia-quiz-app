@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         displayBadges();
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         localStorage.setItem(`dailyStats_${currentUser}_${today}`, JSON.stringify(dailyStats));
@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem(`badges_${currentUser}`, JSON.stringify(badges));
                 resultsContainer.innerHTML += `<p class="text-info animate__animated animate__tada">Unlocked badge: ${badge.name}!</p>`;
                 document.getElementById('achievementSound').play().catch(() => {});
-                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             }
         });
         displayBadges();

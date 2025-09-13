@@ -1,0 +1,1408 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+    Code2, FileText, TestTube, Eye, Folder, File, ChevronDown, ChevronRight,
+    Play, Save, Download, Upload, Search, Filter, Settings, Moon, Sun,
+    GitBranch, History, Zap, Brain, Sparkles, Terminal, Database, Globe,
+    MessageSquare, Bell, User, Menu, X, Plus, Minus, RotateCcw, Copy,
+    ExternalLink, Bug, Shield, Rocket, Target, Layers, Grid, BarChart3,
+    PieChart, TrendingUp, Activity, Clock, Calendar, Star, Heart,
+    ArrowLeft, ArrowRight, RefreshCw, Maximize2, Minimize2, Split,
+    FileCode, Package, Wrench, Palette, Layout, Cpu, Memory, HardDrive,
+    AlertCircle, CheckCircle, Info, Trash2, FolderOpen, PlusSquare
+} from 'lucide-react';
+/*
+// Firebase imports are commented out for local development
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
+import { getFirestore, doc, collection, onSnapshot, updateDoc, setDoc, getDocs, getDoc, query } from 'firebase/firestore';
+*/
+
+// Advanced diff library
+import * as DiffLib from 'diff';
+
+// Enhanced diff logic using DiffLib
+const getDiff = (original, refactored) => {
+  const diff = DiffLib.diffLines(original, refactored, { newlineIsToken: false });
+  const result = [];
+  diff.forEach(part => {
+    const type = part.added ? 'added' : part.removed ? 'removed' : 'unchanged';
+    part.value.split('\n').forEach((line, i, arr) => {
+      if (i < arr.length - 1 || line !== '') {
+        result.push({ type, text: line });
+      }
+    });
+  });
+  return result;
+};
+
+const getSideBySideDiff = (original, refactored) => {
+  const diff = DiffLib.diffLines(original, refactored);
+  const left = [];
+  const right = [];
+  diff.forEach(part => {
+    const lines = part.value.split('\n').slice(0, -1);
+    if (part.added) {
+      lines.forEach(line => {
+        left.push({ type: 'empty', text: '' });
+        right.push({ type: 'added', text: line });
+      });
+    } else if (part.removed) {
+      lines.forEach(line => {
+        left.push({ type: 'removed', text: line });
+        right.push({ type: 'empty', text: '' });
+      });
+    } else {
+      lines.forEach(line => {
+        left.push({ type: 'unchanged', text: line });
+        right.push({ type: 'unchanged', text: line });
+      });
+    }
+  });
+  return { left, right };
+};
+
+// Enhanced AI functionality with more sophisticated prompts
+const callGeminiAPI = async (prompt, projectFiles, taskType, options = {}) => {
+    const systemInstructions = {
+        refactor: `You are a senior software architect with 20+ years of experience in design patterns, clean code principles, and performance optimization. Analyze the provided code and apply sophisticated refactoring techniques such as extracting methods, introducing design patterns (e.g., Strategy, Observer, Factory, Dependency Injection), improving modularity, enhancing readability, ensuring testability, and adhering to SOLID principles. Consider edge cases, scalability, and maintainability. Be concise and return a JSON array of objects. Each object must have the following properties: filePath (string), refactoredContent (string), explanation (string describing changes, rationale, and benefits), priority (string, one of HIGH, MEDIUM, LOW), category (string e.g., 'Readability', 'Performance', 'Modularity'), and impact (string describing expected improvements like 'Reduces time complexity from O(n^2) to O(n log n)').`,
+        
+        explain: `You are an expert technical writer and principal software engineer. Provide a high-level architectural overview of the code's purpose and structure, followed by a bulleted list of key components, design patterns used, data flows, and potential improvements. Include a simple text-based diagram if relevant. Do not provide line-by-line breakdowns. Respond using clean, professional markdown.`,
+        
+        test: `You are a test automation expert specializing in TDD and BDD. Generate a comprehensive test suite including unit tests with edge cases and mocks, integration tests, performance benchmarks, and error handling scenarios. Use appropriate testing frameworks (e.g., Jest for JS, pytest for Python). Cover at least 90% code coverage in your design. Be concise and respond with markdown explanations and code blocks.`,
+        
+        review: `You are a principal engineer conducting a rigorous code review. Evaluate the code for quality, performance bottlenecks, security risks, adherence to best practices, scalability, and maintainability. Provide prioritized, actionable recommendations with code snippets where possible. Use markdown with sections for Strengths, Issues (categorized by severity), and Suggestions.`,
+        
+        optimize: `You are a performance engineering specialist with expertise in algorithms and data structures. Optimize the code for runtime efficiency, memory usage, and scalability. Apply techniques like memoization, lazy loading, algorithmic improvements (e.g., replacing O(n^2) with O(n)), and parallelization where applicable. Be concise and return a JSON array of objects. Each object must have the following properties: filePath (string), refactoredContent (string), explanation (string), priority (string, one of HIGH, MEDIUM, LOW), category (string e.g., 'Time Complexity', 'Memory'), and impact (string).`,
+        
+        security: `You are a cybersecurity expert certified in ethical hacking and familiar with OWASP Top 10. Identify vulnerabilities such as injection attacks, XSS, CSRF, insecure dependencies, and improper authentication. Provide fixes and explanations. Be concise and return a JSON array of objects. Each object must have the following properties: filePath (string), refactoredContent (string), explanation (string), priority (string, one of HIGH, MEDIUM, LOW), category (string e.g., 'Injection', 'Authentication'), and impact (string).`,
+        
+        modernize: `You are a technology modernization consultant. Upgrade the code to leverage the latest language features (e.g., ES2023 for JS, Python 3.12), modern frameworks, async patterns, and best practices like functional programming where suitable. Ensure backward compatibility if possible. Be concise and respond with markdown including before/after examples.`
+    };
+    
+    const isStructuredResponse = ['refactor', 'optimize', 'security'].includes(taskType);
+    
+    // TODO: Replace with environment variable or secure key management
+    const apiKey = "AIzaSyCSe5TJE-ZHogyB7Zi130EIW-dtHR_mzCU";
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+    const filesAsString = projectFiles.map(f => `--- File: ${f.filePath} ---\n${f.content}`).join('\n\n');
+    const userQuery = `${prompt}\n\nHere is the code to analyze:\n\n${filesAsString}`;
+
+    const payload = {
+        contents: [{ parts: [{ text: userQuery }] }],
+        systemInstruction: {
+            parts: [{ text: systemInstructions[taskType] }]
+        },
+        generationConfig: isStructuredResponse ? {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    required: ["filePath", "refactoredContent", "explanation", "priority", "category", "impact"],
+                    properties: {
+                        filePath: { type: "STRING" },
+                        refactoredContent: { type: "STRING" },
+                        explanation: { type: "STRING" },
+                        priority: { type: "STRING", enum: ["HIGH", "MEDIUM", "LOW"] },
+                        category: { type: "STRING" },
+                        impact: { type: "STRING" }
+                    }
+                }
+            }
+        } : undefined
+    };
+
+    let retries = 5; // Increased retries for robustness
+    let delay = 1000;
+    while (retries > 0) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error.message || `API call failed with status ${response.status}`);
+            }
+
+            const rawText = await response.text();
+
+            if (!rawText.trim()) {
+                throw new Error('Received empty response from AI.');
+            }
+
+            const result = JSON.parse(rawText);
+            const candidate = result.candidates?.[0];
+
+            if (!candidate?.content?.parts?.[0]?.text) {
+                throw new Error('No valid text content found in AI response.');
+            }
+
+            const text = candidate.content.parts[0].text;
+
+            if (isStructuredResponse) {
+                try {
+                    const parsed = JSON.parse(text);
+                    // Validate schema
+                    if (!Array.isArray(parsed)) throw new Error('Not an array');
+                    parsed.forEach(obj => {
+                        if (typeof obj !== 'object' || !obj.filePath || !obj.refactoredContent) {
+                            throw new Error('Invalid object structure');
+                        }
+                    });
+                    return parsed;
+                } catch (e) {
+                    console.error('Failed to parse JSON response:', text);
+                    return [{
+                        filePath: 'error.log',
+                        refactoredContent: `// AI response could not be parsed as JSON.\n// Raw response:\n${text}`,
+                        explanation: 'The AI provided an invalid JSON response.',
+                        priority: 'HIGH',
+                        category: 'Error',
+                        impact: 'Cannot automatically apply changes.'
+                    }];
+                }
+            }
+            return text;
+
+        } catch (error) {
+            console.error(`AI task failed. Retries left: ${retries - 1}`, error);
+            retries--;
+            if (retries > 0) {
+                await new Promise(res => setTimeout(res, delay));
+                delay *= 1.5; // Improved exponential backoff
+            } else {
+                throw error;
+            }
+        }
+    }
+};
+
+// Helper Functions
+const getTaskDescription = (taskType) => {
+    const descriptions = {
+        refactor: 'Advanced Refactoring',
+        explain: 'In-depth Analysis',
+        test: 'Comprehensive Testing',
+        review: 'Rigorous Review',
+        optimize: 'Performance Optimization',
+        security: 'Security Hardening',
+        modernize: 'Code Modernization'
+    };
+    return descriptions[taskType] || 'Processing';
+};
+
+const getFileLanguage = (fileName) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const langMap = {
+        js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
+        html: 'html', css: 'css', scss: 'css', sass: 'css',
+        json: 'json', md: 'markdown', txt: 'text',
+        py: 'python', java: 'java', cpp: 'cpp', c: 'c',
+        php: 'php', rb: 'ruby', go: 'go', rust: 'rust'
+    };
+    return langMap[ext] || 'text';
+};
+
+// Enhanced Loading Component with smoother animation
+const LoadingIndicator = ({ task, progress = 0 }) => (
+    <div className="flex flex-col items-center justify-center h-full p-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl">
+        <div className="relative mb-6">
+            <div className="w-20 h-20 rounded-full border-4 border-slate-600 border-t-cyan-500 animate-spin ease-in-out"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+                <Brain className="w-8 h-8 text-cyan-400 animate-pulse" />
+            </div>
+        </div>
+        
+        <div className="text-center space-y-3">
+            <h3 className="text-xl font-semibold text-white">AI Processing</h3>
+            <p className="text-slate-300 animate-pulse">{task}</p>
+            
+            <div className="w-64 bg-slate-700 rounded-full h-2 mt-4 overflow-hidden">
+                <div 
+                    className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                ></div>
+            </div>
+            
+            <div className="flex space-x-1 mt-4">
+                {[0, 1, 2].map(i => (
+                    <div 
+                        key={i}
+                        className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"
+                        style={{ animationDelay: `${i * 0.2}s`, animationDuration: '0.8s' }}
+                    ></div>
+                ))}
+            </div>
+        </div>
+    </div>
+);
+
+// Notification Component with auto-dismiss and stacking
+const NotificationToast = ({ notifications, onDismiss }) => {
+    if (!notifications.length) return null;
+
+    useEffect(() => {
+        const timers = notifications.map(notification => {
+            const duration = notification.type === 'success' ? 5000 : notification.type === 'error' ? 10000 : 7000;
+            const timer = setTimeout(() => onDismiss(notification.id), duration);
+            return timer;
+        });
+        return () => timers.forEach(clearTimeout);
+    }, [notifications, onDismiss]);
+
+    return (
+        <div className="fixed top-4 right-4 z-50 space-y-2 max-h-[80vh] overflow-y-auto pr-2">
+            {notifications.map(notification => (
+                <div
+                    key={notification.id}
+                    className={`p-4 rounded-lg shadow-lg border backdrop-blur-sm transition-all duration-300 transform hover:scale-105 ${
+                        notification.type === 'success' 
+                            ? 'bg-green-900/90 border-green-500 text-green-100'
+                            : notification.type === 'error'
+                            ? 'bg-red-900/90 border-red-500 text-red-100'
+                            : notification.type === 'warning'
+                            ? 'bg-yellow-900/90 border-yellow-500 text-yellow-100'
+                            : 'bg-blue-900/90 border-blue-500 text-blue-100'
+                    }`}
+                >
+                    <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-2">
+                            {notification.type === 'success' && <CheckCircle className="w-5 h-5 flex-shrink-0" />}
+                            {notification.type === 'error' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+                            {notification.type === 'warning' && <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+                            {notification.type === 'info' && <Info className="w-5 h-5 flex-shrink-0" />}
+                            <p className="text-sm">{notification.message}</p>
+                        </div>
+                        <button
+                            onClick={() => onDismiss(notification.id)}
+                            className="ml-4 text-white/60 hover:text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// Enhanced File Tree with search highlighting and context menu
+const FileTreeNode = ({ file, level = 0, onSelect, selectedFile, expandedNodes, onToggleExpand, onDelete }) => {
+    const isDirectory = file.children && file.children.length > 0;
+    const isExpanded = expandedNodes[file.path] || false;
+    const isSelected = selectedFile?.path === file.path;
+    
+    const handleClick = () => {
+        if (isDirectory) {
+            onToggleExpand(file.path);
+        } else {
+            onSelect(file);
+        }
+    };
+
+    const getFileIcon = (fileName) => {
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        const iconMap = {
+            js: '🟨', jsx: '⚛️', ts: '🔷', tsx: '⚛️',
+            html: '🌐', css: '🎨', scss: '🎨', sass: '🎨',
+            json: '📋', md: '📝', txt: '📄',
+            py: '🐍', java: '☕', cpp: '⚙️', c: '⚙️',
+            php: '🐘', rb: '💎', go: '🐹', rust: '🦀'
+        };
+        return iconMap[ext] || '📄';
+    };
+    
+    return (
+        <div className="select-none relative group">
+            <div 
+                className={`flex items-center p-2 cursor-pointer hover:bg-slate-700/50 rounded-lg transition-all duration-200 ${
+                    isSelected ? 'bg-cyan-500/20 border-l-2 border-cyan-500' : ''
+                }`}
+                style={{ paddingLeft: `${level * 20 + 8}px` }}
+                onClick={handleClick}
+            >
+                {isDirectory ? (
+                    <>
+                        {isExpanded ? 
+                            <ChevronDown className="w-4 h-4 mr-2 text-slate-400" /> : 
+                            <ChevronRight className="w-4 h-4 mr-2 text-slate-400" />
+                        }
+                        <FolderOpen className="w-4 h-4 mr-2 text-yellow-500" />
+                    </>
+                ) : (
+                    <>
+                        <span className="mr-2 text-sm">{getFileIcon(file.name)}</span>
+                    </>
+                )}
+                
+                <span className="flex-1 text-sm text-slate-200 truncate">
+                    {file.name}
+                </span>
+                
+                {!isDirectory && file.size && (
+                    <span className="text-xs text-slate-500 ml-2">
+                        {Math.round(file.size / 1024)}kb
+                    </span>
+                )}
+            </div>
+            
+            {isDirectory && isExpanded && file.children.map(child => (
+                <FileTreeNode
+                    key={child.path}
+                    file={child}
+                    level={level + 1}
+                    onSelect={onSelect}
+                    selectedFile={selectedFile}
+                    expandedNodes={expandedNodes}
+                    onToggleExpand={onToggleExpand}
+                    onDelete={onDelete}
+                />
+            ))}
+        </div>
+    );
+};
+
+// Enhanced Code Editor
+// TODO: For further sophistication, replace with Monaco Editor or CodeMirror for syntax highlighting and autocompletion
+const CodeEditor = ({ content, onChange, language = 'javascript', readOnly = false }) => {
+    const editorRef = useRef();
+    const [lineNumbers, setLineNumbers] = useState([]);
+    const [copied, setCopied] = useState(false);
+    
+    useEffect(() => {
+        const lines = content.split('\n');
+        setLineNumbers(Array.from({ length: lines.length }, (_, i) => i + 1));
+    }, [content]);
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+    
+    return (
+        <div className="flex h-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+            <div className="flex flex-col bg-slate-800 text-slate-500 text-xs font-mono p-2 min-w-[50px] select-none">
+                {lineNumbers.map(num => (
+                    <div key={num} className="leading-6 text-right pr-2 hover:text-slate-300">
+                        {num}
+                    </div>
+                ))}
+            </div>
+            
+            <div className="flex-1 relative">
+                <textarea
+                    ref={editorRef}
+                    value={content}
+                    onChange={(e) => onChange?.(e.target.value)}
+                    readOnly={readOnly}
+                    className="w-full h-full p-4 bg-transparent text-slate-200 font-mono text-sm resize-none focus:outline-none leading-6"
+                    style={{ 
+                        tabSize: 2,
+                        fontFamily: 'JetBrains Mono, Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace'
+                    }}
+                />
+                
+                {readOnly && (
+                    <div className="absolute top-2 right-2">
+                        <button 
+                            onClick={handleCopy}
+                            className="p-2 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors"
+                            title={copied ? 'Copied!' : 'Copy code'}
+                        >
+                            {copied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Advanced Side-by-Side Diff View
+const DiffCodeView = ({ originalContent, refactoredContent, filePath }) => {
+  const { left, right } = useMemo(() => getSideBySideDiff(originalContent, refactoredContent), [originalContent, refactoredContent]);
+  const maxLines = Math.max(left.length, right.length);
+
+  const renderSide = (side, isLeft) => (
+    <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col bg-slate-800 text-slate-500 text-xs font-mono p-2 min-w-[50px] select-none">
+        {Array.from({ length: maxLines }, (_, i) => (
+          <div key={i} className="leading-6 text-right pr-2">
+            {i + 1}
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 overflow-auto bg-slate-900">
+        <div className="whitespace-pre-wrap p-4">
+          {side.map((line, index) => (
+            <div 
+              key={index} 
+              className={`leading-6 ${
+                line.type === 'added' ? 'bg-green-900/50 text-green-300' :
+                line.type === 'removed' ? 'bg-red-900/50 text-red-300' :
+                line.type === 'empty' ? 'bg-slate-800/50 text-transparent' : ''
+              }`}
+            >
+              {line.text || ' '}
+            </div>
+          ))}
+          {side.length < maxLines && Array.from({ length: maxLines - side.length }).map((_, i) => (
+            <div key={`empty-${i}`} className="leading-6 bg-slate-800/50 text-transparent">.</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-1 overflow-hidden border-t border-slate-700">
+      <div className="flex-1 border-r border-slate-700 relative">
+        <div className="absolute top-2 left-4 font-semibold text-slate-400">Original</div>
+        {renderSide(left, true)}
+        <div className="absolute top-2 right-2">
+          <button onClick={() => navigator.clipboard.writeText(originalContent)} className="p-2 bg-slate-700 rounded-lg" title="Copy original">
+            <Copy className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 relative">
+        <div className="absolute top-2 left-4 font-semibold text-slate-400">Refactored</div>
+        {renderSide(right, false)}
+        <div className="absolute top-2 right-2">
+          <button onClick={() => navigator.clipboard.writeText(refactoredContent)} className="p-2 bg-slate-700 rounded-lg" title="Copy refactored">
+            <Copy className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Enhanced Statistics Dashboard with animations
+const StatsDashboard = ({ projects, totalFiles, totalLines, recentActivity }) => (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[
+            { icon: Package, label: 'Projects', value: projects.length, color: 'text-cyan-400', bgColor: 'bg-cyan-500/10' },
+            { icon: FileCode, label: 'Files', value: totalFiles, color: 'text-green-400', bgColor: 'bg-green-500/10' },
+            { icon: Activity, label: 'Lines', value: totalLines.toLocaleString(), color: 'text-purple-400', bgColor: 'bg-purple-500/10' },
+            { icon: Zap, label: 'AI Actions', value: recentActivity, color: 'text-orange-400', bgColor: 'bg-orange-500/10' }
+        ].map(({ icon: Icon, label, value, color, bgColor }, index) => (
+            <div key={index} className={`${bgColor} p-4 rounded-xl border border-slate-700/50 hover:border-slate-600 transition-all duration-300 hover:scale-105 group`}>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-slate-400 text-sm group-hover:text-slate-300 transition-colors">{label}</p>
+                        <p className="text-2xl font-bold text-white">{value}</p>
+                    </div>
+                    <Icon className={`w-8 h-8 ${color} opacity-80 group-hover:opacity-100 transition-opacity`} />
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+// Structured Results View with read-only mode
+const StructuredResultsView = ({ results, onApply, onBack, viewTitle, projectFiles, readOnly = false }) => {
+    const hasError = results.some(r => r.filePath === 'error.log');
+    const [applyingId, setApplyingId] = useState(null);
+
+    const handleApply = async (result, id) => {
+        if (readOnly) return;
+        setApplyingId(id);
+        await onApply(result);
+        setApplyingId(null);
+    };
+
+    return (
+        <div className="p-6 space-y-6 overflow-y-auto h-full">
+            <div className="flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm py-4 z-10">
+                <h2 className="text-2xl font-bold text-white flex items-center">
+                    <Code2 className="w-6 h-6 mr-2 text-cyan-400" />
+                    {viewTitle}
+                </h2>
+                <button
+                    onClick={onBack}
+                    className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center space-x-2"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back</span>
+                </button>
+            </div>
+    
+            {hasError ? (
+                <div className="bg-red-900/50 text-red-100 p-6 rounded-xl border border-red-700">
+                    <div className="flex items-center space-x-3 mb-2">
+                        <AlertCircle className="w-6 h-6 flex-shrink-0" />
+                        <h3 className="text-lg font-semibold">AI Response Error</h3>
+                    </div>
+                    <p>The AI returned an invalid or empty response. Please try again with a different prompt or on a different file.</p>
+                    <p className="mt-2 text-sm">Details: {results[0].explanation}</p>
+                    <div className="mt-4">
+                        <CodeEditor
+                            content={results[0].refactoredContent}
+                            readOnly={true}
+                            language="text"
+                        />
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    {results.map((result, index) => {
+                        const originalFile = projectFiles.find(f => f.path === result.filePath);
+                        return (
+                            <div key={index} className="bg-slate-800/50 rounded-xl border border-slate-700/50 overflow-hidden shadow-lg">
+                                <div className="p-4 border-b border-slate-700/50">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="text-lg font-semibold text-white">{result.filePath}</h3>
+                                        <div className="flex items-center space-x-2">
+                                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                result.priority === 'HIGH' ? 'bg-red-500/20 text-red-400' :
+                                                result.priority === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                'bg-green-500/20 text-green-400'
+                                            }`}>
+                                                {result.priority}
+                                            </span>
+                                            <span className="px-2 py-1 bg-slate-700 text-slate-300 rounded text-xs">
+                                                {result.category}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-300 text-sm">{result.explanation}</p>
+                                    {result.impact && (
+                                        <p className="text-cyan-400 text-sm mt-1">Impact: {result.impact}</p>
+                                    )}
+                                </div>
+                                
+                                <div className="flex flex-col h-96">
+                                    <DiffCodeView 
+                                        originalContent={originalFile?.content || ''}
+                                        refactoredContent={result.refactoredContent}
+                                    />
+                                    {!readOnly && (
+                                        <div className="flex justify-end p-4 border-t border-slate-700/50">
+                                            <button
+                                                onClick={() => handleApply(result, index)}
+                                                disabled={applyingId !== null}
+                                                className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {applyingId === index ? (
+                                                    <>
+                                                        <div className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-white animate-spin"></div>
+                                                        <span>Applying...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        <span>Apply Changes</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// AI Response View
+const AIResponseView = ({ response, onBack }) => (
+    <div className="p-6 space-y-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm py-4 z-10">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+                <Brain className="w-6 h-6 mr-2 text-cyan-400" />
+                AI Analysis Results
+            </h2>
+            <button
+                onClick={onBack}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center space-x-2"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+            </button>
+        </div>
+
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 shadow-lg">
+            <div className="prose prose-invert max-w-none">
+                <pre className="whitespace-pre-wrap text-slate-200 font-sans leading-relaxed overflow-x-auto">
+                    {response}
+                </pre>
+            </div>
+        </div>
+    </div>
+);
+
+// History View
+const HistoryView = ({ history, onBack, onViewItem, onClear }) => (
+    <div className="p-6 space-y-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm py-4 z-10">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+                <History className="w-6 h-6 mr-2 text-cyan-400" />
+                AI History
+            </h2>
+            <div className="flex space-x-2">
+                <button
+                    onClick={onClear}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Clear History</span>
+                </button>
+                <button
+                    onClick={onBack}
+                    className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center space-x-2"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back</span>
+                </button>
+            </div>
+        </div>
+
+        <div className="space-y-4">
+            {history.length === 0 ? (
+                <div className="text-center text-slate-400 p-8">
+                    <History className="w-12 h-12 mx-auto mb-4" />
+                    <p>No AI history yet. Perform some actions to see them here.</p>
+                </div>
+            ) : (
+                history.map(item => (
+                    <div key={item.id} className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4 shadow-md hover:shadow-lg transition-shadow">
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold text-cyan-400">{item.taskType.toUpperCase()}</span>
+                            <span className="text-sm text-slate-400">{item.timestamp.toLocaleString()}</span>
+                        </div>
+                        <p className="text-slate-300 text-sm mb-3 line-clamp-2">{item.prompt}</p>
+                        <button 
+                            onClick={() => onViewItem(item)}
+                            className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors flex items-center space-x-2"
+                        >
+                            <Eye className="w-4 h-4" />
+                            <span>View Result</span>
+                        </button>
+                    </div>
+                ))
+            )}
+        </div>
+    </div>
+);
+
+// Settings View with functional theme toggle (assuming Tailwind dark mode)
+const SettingsView = ({ settings, onUpdateSettings, onBack, theme, setTheme }) => (
+    <div className="p-6 space-y-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur-sm py-4 z-10">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+                <Settings className="w-6 h-6 mr-2 text-cyan-400" />
+                Settings
+            </h2>
+            <button
+                onClick={onBack}
+                className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center space-x-2"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
+            </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 shadow-md">
+                <h3 className="text-lg font-semibold text-white mb-4">AI Settings</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-slate-300 text-sm mb-2">AI Model</label>
+                        <select className="w-full p-3 bg-slate-900 text-white rounded-lg border border-slate-700 focus:border-cyan-500 focus:outline-none">
+                            <option>Gemini 2.5 Flash</option>
+                            {/* TODO: Implement API switching for other models */}
+                            <option disabled>GPT-4 (Coming Soon)</option>
+                            <option disabled>Claude 3 (Coming Soon)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-slate-300 text-sm mb-2">Temperature (Creativity)</label>
+                        <input 
+                            type="range" 
+                            min="0" 
+                            max="1" 
+                            step="0.1" 
+                            defaultValue="0.7"
+                            className="w-full accent-cyan-500" 
+                        />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 shadow-md">
+                <h3 className="text-lg font-semibold text-white mb-4">Editor Settings</h3>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-slate-300 text-sm mb-2">Theme</label>
+                        <div className="flex space-x-4">
+                            <button 
+                                onClick={() => setTheme('dark')}
+                                className={`flex-1 p-3 rounded-lg border ${theme === 'dark' ? 'border-cyan-500 bg-slate-900' : 'border-slate-700 bg-slate-800'} flex items-center justify-center space-x-2`}
+                            >
+                                <Moon className="w-4 h-4" />
+                                <span>Dark</span>
+                            </button>
+                            <button 
+                                onClick={() => setTheme('light')}
+                                className={`flex-1 p-3 rounded-lg border ${theme === 'light' ? 'border-cyan-500 bg-white/10' : 'border-slate-700 bg-slate-800'} flex items-center justify-center space-x-2`}
+                            >
+                                <Sun className="w-4 h-4" />
+                                <span>Light</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-slate-300 text-sm mb-2">Font Size</label>
+                        <input 
+                            type="number" 
+                            min="10" 
+                            max="20" 
+                            defaultValue="14"
+                            className="w-full p-3 bg-slate-900 text-white rounded-lg border border-slate-700 focus:border-cyan-500 focus:outline-none"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// Main App Component
+const App = () => {
+    /*
+    // Firebase Setup is commented out for now
+    const [db, setDb] = useState(null);
+    const [auth, setAuth] = useState(null);
+    const [userId, setUserId] = useState(null);
+    */
+
+    // Core state
+    const [loading, setLoading] = useState(false);
+    const [currentTask, setCurrentTask] = useState(null);
+    const [progress, setProgress] = useState(0);
+    
+    // Local persistence with localStorage
+    const [projects, setProjects] = useState([]);
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [projectFiles, setProjectFiles] = useState([]);
+
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [currentView, setCurrentView] = useState('dashboard');
+    
+    // AI results state
+    const [structuredResults, setStructuredResults] = useState([]);
+    const [aiResponse, setAiResponse] = useState('');
+    
+    // UI state
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [expandedNodes, setExpandedNodes] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
+    const [notifications, setNotifications] = useState([]);
+    const [aiHistory, setAiHistory] = useState([]);
+    const [aiPromptInput, setAiPromptInput] = useState('');
+    const [theme, setTheme] = useState('dark'); // For theme switching
+
+    // File input refs
+    const fileInputRef = useRef();
+
+    const addNotification = useCallback((message, type = 'info') => {
+        const notification = {
+            id: Date.now(),
+            message,
+            type,
+            timestamp: new Date()
+        };
+        setNotifications(prev => [notification, ...prev.slice(0, 9)]); // Increased limit
+    }, []);
+
+    const dismissNotification = useCallback((id) => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+    }, []);
+
+    // Load from localStorage
+    useEffect(() => {
+        const savedProjects = localStorage.getItem('ai-code-assistant-projects');
+        if (savedProjects) {
+            const parsed = JSON.parse(savedProjects);
+            setProjects(parsed);
+            if (parsed.length > 0) {
+                setSelectedProject(parsed[0]);
+                setProjectFiles(parsed[0].files || []);
+            }
+        }
+    }, []);
+
+    // Save to localStorage
+    useEffect(() => {
+        localStorage.setItem('ai-code-assistant-projects', JSON.stringify(projects));
+    }, [projects]);
+
+    // Theme application
+    useEffect(() => {
+        document.documentElement.classList.toggle('dark', theme === 'dark');
+        // TODO: Implement light mode styles if needed
+    }, [theme]);
+
+    /*
+    // Firebase code remains commented
+    */
+
+    // Helper to update current project files and sync to projects
+    const updateCurrentProjectFiles = useCallback((newFiles) => {
+        setProjectFiles(newFiles);
+        setProjects(prev => prev.map(p => 
+            p.id === selectedProject?.id ? { ...p, files: newFiles } : p
+        ));
+    }, [selectedProject]);
+
+    // Project statistics
+    const projectStats = useMemo(() => {
+        const totalFiles = projectFiles.length;
+        const totalLines = projectFiles.reduce((sum, file) => 
+            sum + (file.content?.split('\n').length || 0), 0
+        );
+        const recentActivity = aiHistory.length;
+        
+        return { totalFiles, totalLines, recentActivity };
+    }, [projectFiles, aiHistory]);
+    
+    // Enhanced AI task execution with progress simulation
+    const executeAITask = useCallback(async (taskType, options = {}) => {
+        if (!projectFiles.length) {
+            addNotification('Please upload files to a project first.', 'warning');
+            return;
+        }
+
+        setLoading(true);
+        setCurrentTask(getTaskDescription(taskType));
+        setProgress(0);
+        
+        try {
+            const progressInterval = setInterval(() => {
+                setProgress(prev => {
+                    const increment = Math.random() * 10 + 5;
+                    const newProg = Math.min(prev + increment, 95);
+                    if (newProg >= 95) clearInterval(progressInterval);
+                    return newProg;
+                });
+            }, 300 + Math.random() * 200);
+            
+            const fileData = selectedFile 
+                ? [{ filePath: selectedFile.path, content: selectedFile.content }]
+                : projectFiles.map(f => ({ filePath: f.path, content: f.content }));
+            
+            const combinedPrompt = aiPromptInput || options.defaultPrompt;
+
+            const result = await callGeminiAPI(combinedPrompt, fileData, taskType);
+            
+            setProgress(100);
+            
+            const structuredTasks = ['refactor', 'optimize', 'security'];
+            if (structuredTasks.includes(taskType)) {
+                setStructuredResults(result);
+                setCurrentView(taskType);
+            } else {
+                setAiResponse(result);
+                setCurrentView('ai-response');
+            }
+            
+            const historyEntry = {
+                id: Date.now(),
+                taskType,
+                prompt: combinedPrompt,
+                timestamp: new Date(),
+                projectId: selectedProject?.id,
+                result
+            };
+            setAiHistory(prev => [historyEntry, ...prev.slice(0, 99)]); // Increased history limit
+            
+            addNotification(`${getTaskDescription(taskType)} completed successfully`, 'success');
+            
+        } catch (error) {
+            console.error('AI task failed:', error);
+            addNotification(`Failed to ${taskType} code: ${error.message}`, 'error');
+        } finally {
+            setLoading(false);
+            setCurrentTask(null);
+            setProgress(0);
+        }
+    }, [selectedProject, projectFiles, selectedFile, addNotification, aiPromptInput]);
+
+    // File tree operations
+    const toggleNodeExpansion = useCallback((path) => {
+        setExpandedNodes(prev => ({
+            ...prev,
+            [path]: !prev[path]
+        }));
+    }, []);
+
+    // Local file upload with progress
+    const handleFileUpload = useCallback(async (event) => {
+        const files = Array.from(event.target.files);
+        if (!files.length) return;
+
+        const newProjectName = files[0].webkitRelativePath ? files[0].webkitRelativePath.split('/')[0] : `Project-${Date.now()}`;
+        const newProjectId = `proj-${Date.now()}`;
+        
+        setProjectFiles([]);
+        setLoading(true);
+        setCurrentTask('Uploading and processing files...');
+
+        const uploadedFiles = [];
+        let completed = 0;
+
+        for (const file of files) {
+            const reader = new FileReader();
+            await new Promise(resolve => {
+                reader.onload = (e) => {
+                    const fileObj = {
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        path: file.webkitRelativePath || file.name,
+                        content: e.target.result,
+                        size: file.size,
+                        type: file.type
+                    };
+                    uploadedFiles.push(fileObj);
+                    completed++;
+                    setProgress(Math.floor((completed / files.length) * 100));
+                    resolve();
+                };
+                reader.readAsText(file);
+            });
+        }
+        
+        const newProject = { id: newProjectId, name: newProjectName, files: uploadedFiles };
+        setProjects(prev => [...prev, newProject]);
+        setSelectedProject(newProject);
+        setProjectFiles(uploadedFiles);
+        
+        addNotification(`Created new project: "${newProjectName}" with ${files.length} file(s)`, 'success');
+        
+        setLoading(false);
+        setCurrentTask(null);
+        setProgress(0);
+    }, [addNotification]);
+
+    const applyStructuredResult = useCallback((result) => {
+        const newFiles = projectFiles.map(file =>
+            file.path === result.filePath 
+                ? { ...file, content: result.refactoredContent }
+                : file
+        );
+        updateCurrentProjectFiles(newFiles);
+        setSelectedFile(prev => prev?.path === result.filePath ? { ...prev, content: result.refactoredContent } : prev);
+        addNotification(`${result.category} applied successfully to ${result.filePath}`, 'success');
+    }, [projectFiles, updateCurrentProjectFiles, addNotification]);
+
+    const handleNewProject = useCallback(() => {
+        const newId = `proj-${Date.now()}`;
+        const newProject = { id: newId, name: `New Project ${projects.length + 1}`, files: [] };
+        setProjects(prev => [...prev, newProject]);
+        setSelectedProject(newProject);
+        setProjectFiles([]);
+        setSelectedFile(null);
+        addNotification('Created a new blank project.', 'info');
+    }, [projects, addNotification]);
+
+    const handleSelectProject = useCallback((project) => {
+        setSelectedProject(project);
+        setProjectFiles(project.files || []);
+        addNotification(`Switched to project: "${project.name}"`, 'info');
+    }, [addNotification]);
+
+    // Hierarchical file tree
+    const fileTree = useMemo(() => {
+        const tree = [];
+        const pathMap = {};
+
+        projectFiles.forEach(file => {
+            const pathParts = file.path.split('/');
+            let currentLevel = tree;
+            let currentPath = '';
+
+            pathParts.forEach((part, index) => {
+                currentPath += (currentPath ? '/' : '') + part;
+                
+                if (index === pathParts.length - 1) {
+                    currentLevel.push({
+                        ...file,
+                        name: part,
+                        path: currentPath
+                    });
+                } else {
+                    let dir = pathMap[currentPath];
+                    if (!dir) {
+                        dir = {
+                            name: part,
+                            path: currentPath,
+                            children: []
+                        };
+                        pathMap[currentPath] = dir;
+                        currentLevel.push(dir);
+                    }
+                    currentLevel = dir.children;
+                }
+            });
+        });
+
+        return tree;
+    }, [projectFiles]);
+
+    // Advanced file filtering with content search
+    const filteredFiles = useMemo(() => {
+        if (!searchQuery.trim()) return fileTree;
+        
+        const lowerQuery = searchQuery.toLowerCase();
+        const filterTree = (nodes) => nodes.reduce((acc, node) => {
+            if (node.children) {
+                const filteredChildren = filterTree(node.children);
+                if (filteredChildren.length > 0 || node.name.toLowerCase().includes(lowerQuery)) {
+                    acc.push({ ...node, children: filteredChildren });
+                }
+            } else if (
+                node.name.toLowerCase().includes(lowerQuery) ||
+                (node.content && node.content.toLowerCase().includes(lowerQuery))
+            ) {
+                acc.push(node);
+            }
+            return acc;
+        }, []);
+        
+        return filterTree(fileTree);
+    }, [fileTree, searchQuery]);
+
+    // View item from history
+    const handleViewHistoryItem = useCallback((item) => {
+        const structuredTasks = ['refactor', 'optimize', 'security'];
+        if (structuredTasks.includes(item.taskType)) {
+            setStructuredResults(item.result);
+            setCurrentView(item.taskType);
+        } else {
+            setAiResponse(item.result);
+            setCurrentView('ai-response');
+        }
+    }, []);
+
+    // Clear history
+    const handleClearHistory = useCallback(() => {
+        setAiHistory([]);
+        addNotification('AI history cleared.', 'info');
+    }, [addNotification]);
+
+    // Main render
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+                <LoadingIndicator task={currentTask} progress={progress} />
+            </div>
+        );
+    }
+
+    return (
+        <div className={`min-h-screen text-white ${theme === 'dark' ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900' : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-black'}`}>
+            <NotificationToast 
+                notifications={notifications} 
+                onDismiss={dismissNotification}
+            />
+
+            {/* Header */}
+            <header className="bg-slate-900/95 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40">
+                <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                            className="p-2 hover:bg-slate-800 rounded-lg transition-colors lg:hidden"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg">
+                                <Sparkles className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                                    AI Code Assistant Pro
+                                </h1>
+                                <p className="text-xs text-slate-400">Sophisticated Code Analysis & Transformation</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center space-x-4">
+                        <button
+                            onClick={() => setCurrentView('settings')}
+                            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
+                            title="Settings"
+                        >
+                            <Settings className="w-5 h-5 text-slate-400 hover:text-white" />
+                        </button>
+                        
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 flex items-center space-x-2"
+                        >
+                            <Upload className="w-4 h-4" />
+                            <span>Upload Project</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div className="flex h-[calc(100vh-80px)]">
+                {/* Sidebar */}
+                <aside className={`bg-slate-900/50 backdrop-blur-sm border-r border-slate-700/50 transition-all duration-300 ${
+                    sidebarCollapsed ? 'w-0 overflow-hidden p-0' : 'w-80 p-4'
+                }`}>
+                    <div className="flex flex-col h-full overflow-y-auto">
+                        {/* New Project & Project Selector */}
+                        <div className="flex items-center justify-between mb-4">
+                            <button
+                                onClick={handleNewProject}
+                                className="flex-1 px-3 py-2 bg-slate-800 text-cyan-400 rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors flex items-center justify-center space-x-2 mr-2"
+                                title="Create a new project"
+                            >
+                                <PlusSquare className="w-4 h-4" />
+                                <span>New Project</span>
+                            </button>
+                            <div className="relative flex-1">
+                                <select 
+                                    value={selectedProject?.id || ''} 
+                                    onChange={(e) => {
+                                        const selected = projects.find(p => p.id === e.target.value);
+                                        if (selected) {
+                                            handleSelectProject(selected);
+                                        }
+                                    }}
+                                    className="w-full p-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-cyan-500 focus:outline-none appearance-none pr-8 truncate"
+                                >
+                                    <option value="" disabled>{projects.length > 0 ? "Select a project" : "No projects"}</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        {/* Search */}
+                        <div className="relative mb-4">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search files or content..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-cyan-500 focus:outline-none"
+                            />
+                        </div>
+
+                        {/* Project Info */}
+                        {selectedProject && (
+                            <div className="mb-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                                <h3 className="font-semibold text-white mb-2">{selectedProject.name}</h3>
+                                <div className="text-sm text-slate-400 space-y-1">
+                                    <div className="flex justify-between">
+                                        <span>Files:</span>
+                                        <span>{projectFiles.length}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span>Size:</span>
+                                        <span>{Math.round(projectFiles.reduce((sum, f) => sum + (f.size || 0), 0) / 1024)}kb</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* File Tree */}
+                        <div className="flex-1 overflow-y-auto mb-4">
+                            <h4 className="text-sm font-medium text-slate-400 mb-2 flex items-center">
+                                <Folder className="w-4 h-4 mr-2" />
+                                Project Files
+                            </h4>
+                            
+                            <div className="space-y-1">
+                                {filteredFiles.length > 0 ? filteredFiles.map(file => (
+                                    <FileTreeNode
+                                        key={file.path}
+                                        file={file}
+                                        level={0}
+                                        onSelect={setSelectedFile}
+                                        selectedFile={selectedFile}
+                                        expandedNodes={expandedNodes}
+                                        onToggleExpand={toggleNodeExpansion}
+                                    />
+                                )) : (
+                                    <p className="text-slate-500 text-sm p-2">No files match your search.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* AI Actions */}
+                        <div>
+                            <h4 className="text-sm font-medium text-slate-400 mb-3 flex items-center">
+                                <Brain className="w-4 h-4 mr-2" />
+                                AI Actions
+                            </h4>
+                            <div className="mb-4">
+                                <label className="block text-slate-300 text-sm mb-2">Custom AI Prompt</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., Implement advanced caching with LRU"
+                                    value={aiPromptInput}
+                                    onChange={(e) => setAiPromptInput(e.target.value)}
+                                    className="w-full pl-4 pr-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 focus:border-cyan-500 focus:outline-none"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                {[
+                                    { key: 'refactor', icon: Code2, label: 'Refactor', color: 'from-cyan-600 to-blue-600', defaultPrompt: `Apply advanced refactoring techniques to this code.` },
+                                    { key: 'explain', icon: FileText, label: 'Explain', color: 'from-green-600 to-emerald-600', defaultPrompt: `Provide an in-depth architectural explanation of this code.` },
+                                    { key: 'test', icon: TestTube, label: 'Test', color: 'from-purple-600 to-indigo-600', defaultPrompt: `Generate a full test suite with high coverage for this code.` },
+                                    { key: 'review', icon: Eye, label: 'Review', color: 'from-orange-600 to-red-600', defaultPrompt: `Conduct a rigorous code review for this code.` },
+                                    { key: 'optimize', icon: Zap, label: 'Optimize', color: 'from-yellow-600 to-orange-600', defaultPrompt: `Optimize this code for superior performance.` },
+                                    { key: 'security', icon: Shield, label: 'Security', color: 'from-red-600 to-pink-600', defaultPrompt: `Harden this code against security vulnerabilities.` },
+                                    { key: 'modernize', icon: Rocket, label: 'Modernize', color: 'from-blue-600 to-purple-600', defaultPrompt: `Modernize this code with latest features and patterns.` }
+                                ].map(({ key, icon: Icon, label, color, defaultPrompt }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => executeAITask(key, { defaultPrompt })}
+                                        disabled={!projectFiles.length}
+                                        className={`p-3 bg-gradient-to-r ${color} text-white rounded-lg hover:opacity-90 transition-all duration-200 flex flex-col items-center space-y-1 disabled:opacity-50 disabled:cursor-not-allowed group`}
+                                    >
+                                        <Icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                        <span className="text-xs">{label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                onClick={() => setCurrentView('history')}
+                                className="w-full px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors flex items-center justify-center space-x-2"
+                            >
+                                <History className="w-4 h-4" />
+                                <span>View AI History</span>
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Main Content */}
+                <main className="flex-1 overflow-hidden">
+                    {currentView === 'dashboard' && (
+                        <div className="p-6 h-full flex flex-col overflow-hidden">
+                            <StatsDashboard 
+                                projects={projects} 
+                                totalFiles={projectStats.totalFiles}
+                                totalLines={projectStats.totalLines}
+                                recentActivity={projectStats.recentActivity}
+                            />
+                            
+                            {selectedFile ? (
+                                <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 overflow-hidden flex flex-col flex-1">
+                                    <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold text-white truncate max-w-[60%]">{selectedFile.name}</h3>
+                                        <div className="flex items-center space-x-2 text-sm text-slate-400">
+                                            <span>{getFileLanguage(selectedFile.name)}</span>
+                                            <span>•</span>
+                                            <span>{selectedFile.content?.split('\n').length || 0} lines</span>
+                                            <span>•</span>
+                                            <span>{Math.round(selectedFile.size / 1024)}kb</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex-1 overflow-hidden">
+                                        <CodeEditor
+                                            content={selectedFile.content || ''}
+                                            onChange={(newContent) => {
+                                                const newFiles = projectFiles.map(f =>
+                                                    f.id === selectedFile.id ? { ...f, content: newContent } : f
+                                                );
+                                                updateCurrentProjectFiles(newFiles);
+                                                setSelectedFile({ ...selectedFile, content: newContent });
+                                            }}
+                                            language={getFileLanguage(selectedFile.name)}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-slate-800/30 rounded-xl border border-slate-700/50 p-12 text-center flex flex-col justify-center items-center flex-1">
+                                    <FileCode className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+                                    <h3 className="text-xl font-semibold text-slate-400 mb-2">No File Selected</h3>
+                                    <p className="text-slate-500">Select a file from the sidebar or upload a new project to begin.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {['refactor', 'optimize', 'security'].includes(currentView) && (
+                        <StructuredResultsView
+                            results={structuredResults}
+                            onApply={applyStructuredResult}
+                            onBack={() => setCurrentView('dashboard')}
+                            viewTitle={
+                                currentView === 'refactor' ? 'Advanced Refactoring Suggestions' :
+                                currentView === 'optimize' ? 'Performance Optimization Suggestions' :
+                                'Security Hardening Analysis'
+                            }
+                            projectFiles={projectFiles}
+                        />
+                    )}
+                    
+                    {currentView === 'ai-response' && (
+                        <AIResponseView
+                            response={aiResponse}
+                            onBack={() => setCurrentView('dashboard')}
+                        />
+                    )}
+
+                    {currentView === 'history' && (
+                        <HistoryView
+                            history={aiHistory}
+                            onBack={() => setCurrentView('dashboard')}
+                            onViewItem={handleViewHistoryItem}
+                            onClear={handleClearHistory}
+                        />
+                    )}
+
+                    {currentView === 'settings' && (
+                        <SettingsView
+                            settings={{}}
+                            onUpdateSettings={() => {}}
+                            onBack={() => setCurrentView('dashboard')}
+                            theme={theme}
+                            setTheme={setTheme}
+                        />
+                    )}
+                </main>
+            </div>
+
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                webkitdirectory=""
+                directory=""
+                accept=".js,.jsx,.ts,.tsx,.html,.css,.json,.md,.txt,.py,.java,.cpp,.c,.php,.rb,.go,.rs"
+                onChange={handleFileUpload}
+                className="hidden"
+            />
+        </div>
+    );
+};
+
+export default App;
