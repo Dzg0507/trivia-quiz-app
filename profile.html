@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia Profile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4" id="profile-container">
+        <h1 class="profile-title animate__animated animate__bounceIn">My Trivia Profile</h1>
+        <div id="profile-content" class="card p-4 animate__animated animate__fadeIn">
+            <div class="mb-3">
+                <label for="bgColor" class="form-label">Background Color</label>
+                <input type="color" class="form-control form-control-color" id="bgColor" value="#ffffff">
+            </div>
+            <div class="mb-3">
+                <label for="avatar" class="form-label">Avatar</label>
+                <select id="avatar" class="form-select">
+                    <option value="👤">Default (👤)</option>
+                    <option value="🎮">Gamer (🎮)</option>
+                    <option value="⭐">Star (⭐)</option>
+                    <option value="🌟">Sparkle (🌟)</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="bio" class="form-label">Bio</label>
+                <textarea id="bio" class="form-control" rows="3" placeholder="Tell us about yourself!"></textarea>
+            </div>
+            <button id="saveProfile" class="btn btn-primary animate__animated animate__pulse">Save Profile</button>
+            <button id="shareProfile" class="btn btn-success ms-2 animate__animated animate__pulse">Share Profile</button>
+            <div id="stats" class="mt-4">
+                <h4>Stats</h4>
+                <p>Points: <span id="points">0</span></p>
+                <p>Correct Answers: <span id="correctAnswers">0</span></p>
+                <p>Streak: <span id="streak">0</span> days</p>
+                <div id="badges" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        const profileContent = document.getElementById('profile-content');
+        const bgColor = document.getElementById('bgColor');
+        const avatar = document.getElementById('avatar');
+        const bio = document.getElementById('bio');
+        const saveProfile = document.getElementById('saveProfile');
+        const shareProfile = document.getElementById('shareProfile');
+        const points = document.getElementById('points');
+        const correctAnswers = document.getElementById('correctAnswers');
+        const streak = document.getElementById('streak');
+        const badges = document.getElementById('badges');
+
+        // Load profile data
+        function loadProfile() {
+            const profile = JSON.parse(localStorage.getItem(`profile_${currentUser}`)) || {};
+            profileContent.style.backgroundColor = profile.bgColor || '#ffffff';
+            bgColor.value = profile.bgColor || '#ffffff';
+            avatar.value = profile.avatar || '👤';
+            bio.value = profile.bio || '';
+            points.textContent = localStorage.getItem(`points_${currentUser}`) || 0;
+            correctAnswers.textContent = localStorage.getItem(`correctAnswers_${currentUser}`) || 0;
+            streak.textContent = localStorage.getItem(`streak_${currentUser}`) || 0;
+            const userBadges = JSON.parse(localStorage.getItem(`badges_${currentUser}`)) || [];
+            badges.innerHTML = userBadges.length ? userBadges.map(b => `<span class="badge bg-info me-1">${b}</span>`).join('') : 'No badges yet!';
+        }
+
+        // Save profile
+        saveProfile.addEventListener('click', () => {
+            const profile = {
+                bgColor: bgColor.value,
+                avatar: avatar.value,
+                bio: bio.value
+            };
+            localStorage.setItem(`profile_${currentUser}`, JSON.stringify(profile));
+            profileContent.style.backgroundColor = bgColor.value;
+            badges.innerHTML += '<span class="badge bg-success animate__animated animate__tada">Profile Saved!</span>';
+            setTimeout(() => badges.querySelector('.bg-success')?.remove(), 2000);
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        });
+
+        // Share profile
+        shareProfile.addEventListener('click', () => {
+            const profileData = {
+                user: currentUser,
+                points: localStorage.getItem(`points_${currentUser}`) || 0,
+                streak: localStorage.getItem(`streak_${currentUser}`) || 0,
+                badges: JSON.parse(localStorage.getItem(`badges_${currentUser}`)) || [],
+                avatar: avatar.value,
+                bio: bio.value
+            };
+            const shareUrl = `${window.location.origin}/profile.html?user=${encodeURIComponent(currentUser)}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: `${currentUser}'s Trivia Profile`,
+                    text: `Check out my Trivia profile! Points: ${profileData.points}, Streak: ${profileData.streak} days, Badges: ${profileData.badges.join(', ')}`,
+                    url: shareUrl
+                }).catch(err => console.error('Share failed:', err));
+            } else {
+                alert(`Share this link: ${shareUrl}`);
+            }
+        });
+
+        // Handle shared profile view
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewUser = urlParams.get('user');
+        if (viewUser && viewUser !== currentUser) {
+            const viewedProfile = JSON.parse(localStorage.getItem(`profile_${viewUser}`)) || {};
+            profileContent.style.backgroundColor = viewedProfile.bgColor || '#ffffff';
+            document.querySelector('.profile-title').textContent = `${viewUser}'s Trivia Profile`;
+            bio.value = viewedProfile.bio || 'No bio set.';
+            avatar.value = viewedProfile.avatar || '👤';
+            points.textContent = localStorage.getItem(`points_${viewUser}`) || 0;
+            correctAnswers.textContent = localStorage.getItem(`correctAnswers_${viewUser}`) || 0;
+            streak.textContent = localStorage.getItem(`streak_${viewUser}`) || 0;
+            const viewBadges = JSON.parse(localStorage.getItem(`badges_${viewUser}`)) || [];
+            badges.innerHTML = viewBadges.length ? viewBadges.map(b => `<span class="badge bg-info me-1">${b}</span>`).join('') : 'No badges yet!';
+            saveProfile.style.display = 'none';
+            shareProfile.style.display = 'none';
+        } else {
+            loadProfile();
+        }
+    </script>
+</body>
+</html>
