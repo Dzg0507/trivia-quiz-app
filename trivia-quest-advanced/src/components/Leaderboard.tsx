@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { firestoreService, LeaderboardEntry } from '../services/firestoreService.ts'; // Import LeaderboardEntry
 import { Trophy, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion'; // Import motion
@@ -7,24 +7,7 @@ interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
 }
 
-interface RawUserData {
-  id: string;
-  username?: string;
-  points: number;
-}
 
-const processLeaderboardData = (usersData: RawUserData[]): LeaderboardEntry[] => {
-  return usersData
-    .filter(user => typeof user.points === 'number')
-    .sort((a, b) => b.points - a.points)
-    .slice(0, 10)
-    .map((user, index) => ({
-      id: user.id,
-      rank: index + 1,
-      username: user.username || user.id,
-      points: user.points,
-    }));
-};
 
 const LeaderboardTable = ({ leaderboard }: LeaderboardTableProps) => (
   <div className="card animate-enter">
@@ -73,9 +56,8 @@ const Leaderboard = () => {
     try {
       setLoading(true);
       setError(null);
-      const usersData = await firestoreService.getLeaderboardData();
-      const sortedLeaderboard = processLeaderboardData(usersData);
-      setLeaderboard(sortedLeaderboard);
+      const leaderboardData = await firestoreService.getLeaderboardData();
+      setLeaderboard(leaderboardData);
     } catch (err: unknown) {
       console.error('Error fetching leaderboard:', err);
       if (err instanceof Error) {

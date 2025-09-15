@@ -1,17 +1,19 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, usePlane, useBox, useSphere } from '@react-three/cannon';
 import { KeyboardControls, OrbitControls, useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useQuestManager } from '../hooks/useQuestManager';
+import { COLLISION_GROUPS } from '../config/physicsConfig';
+import { QuestWithDefinition } from '../services/firestoreService';
 
-// Define collision filter groups
-export const COLLISION_GROUPS = {
-  PLAYER: 1,
-  QUEST: 2,
-  OBSTACLE: 4,
-  GROUND: 8,
-};
+enum Controls {
+  forward = 'forward',
+  backward = 'backward',
+  left = 'left',
+  right = 'right',
+  jump = 'jump',
+}
 
 const Ground = () => {
   const [ref] = usePlane(() => ({
@@ -51,7 +53,7 @@ const Player = () => {
     collisionFilterGroup: COLLISION_GROUPS.PLAYER,
     collisionFilterMask: COLLISION_GROUPS.GROUND | COLLISION_GROUPS.OBSTACLE | COLLISION_GROUPS.QUEST,
   }));
-  const { forward, backward, left, right, jump } = useKeyboardControls((state) => state);
+  const [, get] = useKeyboardControls<Controls>()
   const velocity = useRef([0, 0, 0]);
 
   useEffect(() => {
@@ -59,6 +61,7 @@ const Player = () => {
   }, [api.velocity]);
 
   useFrame((state) => {
+    const { forward, backward, left, right, jump } = get();
     const speed = 5;
     const frontVector = new THREE.Vector3(0, 0, Number(backward) - Number(forward));
     const sideVector = new THREE.Vector3(Number(left) - Number(right), 0, 0);
@@ -85,7 +88,7 @@ const Player = () => {
   );
 };
 
-const QuestObject = ({ position, quest }: { position: [number, number, number], quest: any }) => {
+const QuestObject = ({ position, quest }: { position: [number, number, number], quest: QuestWithDefinition }) => {
   const [ref] = useBox(() => ({
     isTrigger: true,
     args: [2, 2, 2],

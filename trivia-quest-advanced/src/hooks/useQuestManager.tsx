@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useUserStats } from './useUserStats';
-import { firestoreService, UserQuest, Quest, QuestWithDefinition } from '../services/firestoreService';
+import { firestoreService, QuestWithDefinition } from '../services/firestoreService';
 import { QUEST_DEFINITIONS } from '../config/questDefinitions';
 
 export const useQuestManager = () => {

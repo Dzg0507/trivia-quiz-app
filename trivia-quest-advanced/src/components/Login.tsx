@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, useCallback, ChangeEvent, FormEvent } from 'react';
 import { authService } from '../services/authService.ts';
 import { useAuth } from '../hooks/useAuth.ts';
 import { useNavigate } from 'react-router-dom';
@@ -29,8 +29,8 @@ const Login = () => {
 
     if (result.success) {
       addNotification(result.message || (isSignup ? 'Account created successfully!' : 'Login successful!'), 'success');
-      if (!isSignup) {
-        authContextLogin(username); // Assuming login takes username as string
+      if (!isSignup && result.user) {
+        authContextLogin(result.user);
         navigate('/');
       }
     } else {

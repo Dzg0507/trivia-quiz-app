@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, ReactNode } from 'react';
+import { useState, useCallback, useMemo, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { NotificationContext, Notification, NotificationType } from './NotificationContextValue.ts';
 

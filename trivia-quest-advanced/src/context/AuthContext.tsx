@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import { useState, ReactNode } from 'react';
 import { AuthContext } from './AuthContextValue.ts';
 import { User } from 'firebase/auth';
 
@@ -9,8 +9,8 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null); // TODO: Use proper User type
 
-  const login = (username: string) => {
-    setCurrentUser(username);
+  const login = (user: User) => {
+    setCurrentUser(user);
   };
 
   const logout = () => {

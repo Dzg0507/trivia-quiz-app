@@ -5,7 +5,7 @@ interface ErrorLog {
   severity: ErrorSeverity;
   message: string;
   stack?: string;
-  componentStack?: string;
+  componentStack?: string | null;
   context?: Record<string, unknown>;
 }
 

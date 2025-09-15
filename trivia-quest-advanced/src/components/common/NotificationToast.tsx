@@ -1,6 +1,6 @@
-import React from 'react';
 import { useNotifications } from '../../hooks/useNotifications.ts';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { Notification } from '../../context/NotificationContextValue.ts';
 
 const NotificationToastContainer = () => {
   const { notifications } = useNotifications();
@@ -14,10 +14,10 @@ const NotificationToastContainer = () => {
   );
 };
 
-const NotificationToast = ({ notification }) => {
+const NotificationToast = ({ notification }: { notification: Notification }) => {
     return (
         <div
-          className={`card flex items-center gap-4 animate-enter animate-leave ${
+          className={`card flex items-center gap-4 animate-enter ${
             notification.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'
           }`}>
             {notification.type === 'success' ? 

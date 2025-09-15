@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import * as THREE from 'three';
-import { useQuizProgress } from '../../hooks/useQuizProgress';
+
 
 interface AnimationState {
   scene?: THREE.Scene;
@@ -40,7 +40,7 @@ const BackgroundAnimation = () => {
   const mountRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const state = useRef<AnimationState>({}).current;
-  const { currentIndex, questionsLength } = useQuizProgress();
+  
 
   const animate = useCallback(() => {
     if (state.torusKnot) {

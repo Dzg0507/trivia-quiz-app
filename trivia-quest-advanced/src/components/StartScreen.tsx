@@ -1,6 +1,6 @@
-import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import LoomScene from './LoomScene';
 import '../app.css';
 
@@ -25,7 +25,7 @@ const titleContainerVariants = {
   },
 };
 
-const letterVariants = {
+const letterVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
@@ -38,7 +38,7 @@ const letterVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { y: 20, opacity: 0 },
   visible: { y: 0, opacity: 1, transition: { type: 'spring' } },
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.ts';
 import { Trophy, Star, User, BarChart, Settings as SettingsIcon } from 'lucide-react';

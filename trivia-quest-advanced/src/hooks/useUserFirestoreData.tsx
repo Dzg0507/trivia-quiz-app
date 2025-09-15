@@ -13,6 +13,7 @@ const INITIAL_USER_DATA: FirestoreUserData = {
     bestScore: 0,
     averageAccuracy: 0,
     longestStreak: 0,
+    correctAnswers: 0
   },
   profile: {
     avatar: '😊',
@@ -20,6 +21,12 @@ const INITIAL_USER_DATA: FirestoreUserData = {
   },
   achievements: [],
   quests: [],
+  badges: [],
+  lastQuestGeneration: {
+    daily: 0,
+    weekly: 0,
+    monthly: 0
+  }
 };
 
 export const useUserFirestoreData = (currentUser: User | null) => {

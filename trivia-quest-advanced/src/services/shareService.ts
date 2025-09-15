@@ -1,3 +1,5 @@
+import { ScoreData } from '../types/trivia';
+
 interface ShareResult {
   success: boolean;
   message?: string;

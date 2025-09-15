@@ -18,3 +18,9 @@ export interface ApiError {
   details?: unknown;
   isCanceled?: boolean;
 }
+
+export interface ScoreData {
+  score: number;
+  total: number;
+  playerName?: string;
+}

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { firestoreService, MultiplayerGameSession } from '../services/firestoreService';
 import { useAuth } from '../hooks/useAuth';
 import { useNotifications } from '../hooks/useNotifications';
@@ -26,7 +28,7 @@ const MultiplayerLobby: React.FC = () => {
         // firestoreService.listenToAvailableGames((games) => { setAvailableGames(games); setLoadingGames(false); });
         // Since listenToAvailableGames is not implemented, we'll simulate a fetch
         // In a real app, you'd query for games where status === 'waiting'
-        const gamesCollection = await firestoreService.getDocs(firestoreService.collection(firestoreService.db, 'multiplayerGames'));
+        const gamesCollection = await getDocs(collection(db, 'multiplayerGames'));
         const games: MultiplayerGameSession[] = [];
         gamesCollection.forEach(doc => {
           const game = doc.data() as MultiplayerGameSession;

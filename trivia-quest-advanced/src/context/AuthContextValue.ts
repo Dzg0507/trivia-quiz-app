@@ -3,7 +3,7 @@ import { User } from 'firebase/auth';
 
 interface AuthContextType {
   currentUser: User | null; // TODO: Define a proper User type
-  login: (username: string) => void;
+  login: (user: User) => void;
   logout: () => void;
 }
 

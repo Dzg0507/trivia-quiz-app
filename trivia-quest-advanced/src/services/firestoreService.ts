@@ -9,6 +9,7 @@ export interface UserStats {
   bestScore: number;
   averageAccuracy: number;
   longestStreak: number;
+  correctAnswers: number;
 }
 
 export interface UserProfile {
@@ -62,6 +63,7 @@ export interface LeaderboardEntry {
   id: string;
   username: string;
   points: number;
+  rank: number;
 }
 
 export interface MultiplayerGameSession {
@@ -100,6 +102,7 @@ export const firestoreService = {
           bestScore: 0,
           averageAccuracy: 0,
           longestStreak: 0,
+          correctAnswers: 0,
         },
         profile: {
           avatar: '😊',
@@ -230,10 +233,11 @@ export const firestoreService = {
     const usersCol = collection(db, 'users');
     const q = query(usersCol, orderBy('stats.totalScore', 'desc'), limit(topN));
     const userSnapshot = await getDocs(q);
-    const leaderboardData: LeaderboardEntry[] = userSnapshot.docs.map(doc => ({
+    const leaderboardData: LeaderboardEntry[] = userSnapshot.docs.map((doc, index) => ({
       id: doc.id,
       username: doc.data().username || doc.id,
       points: doc.data().stats.totalScore,
+      rank: index + 1, // Add rank based on the sorted order
     }));
     return leaderboardData;
   },
