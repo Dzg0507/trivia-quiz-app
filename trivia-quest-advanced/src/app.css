@@ -1,1 +1,9 @@
 .appContainer { position: relative; min-height: 100vh; }
+
+.threadbare-text {
+  background-image: url('/noisy.png');
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+}
