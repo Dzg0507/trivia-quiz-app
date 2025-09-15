@@ -1,59 +1,91 @@
-body.bg-gradient {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
+/* styles.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Default Light Theme */
+    --color-primary: #1e3c72;
+    --color-primary-rgb: 30, 60, 114; /* RGB for #1e3c72 */
+    --color-secondary: #ffcc00;
+    --color-background: #f0f2f5;
+    --color-text: #333333;
+    --color-accent: #007bff;
+  }
+
+  [data-theme='dark'] {
+    --color-primary: #1a335e;
+    --color-primary-rgb: 26, 51, 94; /* RGB for #1a335e */
+    --color-secondary: #e6b800;
+    --color-background: #1f2937;
+    --color-text: #ffffff;
+    --color-accent: #00ffff;
+  }
+
+  [data-theme='retro-neon'] {
+    --color-primary: #00ffff;
+    --color-primary-rgb: 0, 255, 255; /* RGB for #00ffff */
+    --color-secondary: #ff00ff;
+    --color-background: #0a0a0a;
+    --color-text: #00ff00;
+    --color-accent: #ff00ff;
+  }
+
+  [data-theme='high-contrast'] {
+    --color-primary: #000000;
+    --color-primary-rgb: 0, 0, 0; /* RGB for #000000 */
+    --color-secondary: #ffffff;
+    --color-background: #000000;
+    --color-text: #ffffff;
+    --color-accent: #ffff00;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
     min-height: 100vh;
-    color: #fff;
-    transition: background 0.5s;
+  }
 }
 
-.default-theme { background: linear-gradient(135deg, #1e3c72, #2a5298); }
-.dark-theme { background: linear-gradient(135deg, #1a1a1a, #2c2c2c); }
-.retro-theme { background: linear-gradient(135deg, #ffcc00, #ff9900); color: #000080; }
-.neon-theme {
-    background: linear-gradient(135deg, #ff00ff, #00ffff);
-    background-size: 200% 200%;
-    animation: neonGradient 10s ease infinite;
-    color: #fff;
-    text-shadow: 0 0 10px #fff, 0 0 20px #0ff, 0 0 30px #f0f;
+@layer components {
+  .btn {
+    @apply py-2 px-4 rounded-lg font-semibold transition-all duration-300 ease-in-out;
+    background-color: var(--color-primary);
+    color: var(--color-text);
+  }
+
+  .btn-gold {
+    background-color: var(--color-secondary);
+    color: var(--color-text);
+  }
+
+  .btn-neon {
+    background-color: var(--color-accent);
+    color: var(--color-primary);
+  }
+
+  .card {
+    @apply backdrop-blur-md rounded-2xl p-6 shadow-lg;
+    background-color: rgba(var(--color-primary-rgb), 0.95);
+    border: 1px solid var(--color-primary);
+  }
 }
 
-@keyframes neonGradient {
-    0% { background-position: 0% 0%; }
-    50% { background-position: 100% 100%; }
-    100% { background-position: 0% 0%; }
+@layer utilities {
+  @keyframes pulse-glow {
+    0%, 100% {
+      transform: scale(1);
+      text-shadow: 0 0 5px var(--color-accent);
+    }
+    50% {
+      transform: scale(1.05);
+      text-shadow: 0 0 20px var(--color-accent);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s infinite;
+  }
 }
-
-.navbar-dark { background: linear-gradient(90deg, #1e3c72, #2a5298); }
-.navbar-brand, .nav-link { color: #fff !important; }
-.nav-link:hover { color: #ffcc00 !important; }
-
-h1 { font-family: 'Arial', sans-serif; font-weight: bold; }
-.badge-title, .question-title, .points-text, .streak-text { animation: pulse 1.5s infinite; }
-@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-.badge-container .badge-card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    transition: transform 0.3s;
-}
-.badge-container .badge-card:hover { transform: scale(1.1); }
-
-.answer-option { transition: background-color 0.3s; }
-.answer-option:hover { background-color: rgba(255, 255, 255, 0.2); }
-
-.animate__animated { --animate-duration: 0.5s; }
-.animate__fadeInUp { --animate-duration: 0.7s; }
-
-.card { border: none; }
-.card.bg-dark { background: rgba(0, 0, 0, 0.7); }
-.form-control.bg-secondary { background: rgba(255, 255, 255, 0.1); border: none; }
-.form-control:focus { background: rgba(255, 255, 255, 0.2); border-color: #ffcc00; box-shadow: 0 0 5px #ffcc00; }
-.btn-primary, .btn-success { background: #ffcc00; border: none; }
-.btn-primary:hover, .btn-success:hover { background: #e6b800; }
-.progress-bar { transition: width 0.5s; }
-
-.text-trivia-gold { color: #ffcc00; } /* Matches your retro theme gold */
-.bg-trivia-gold { background-color: #ffcc00; }
-.hover:bg-yellow-400:hover { background-color: #facc15; }
-.transition { transition: all 0.3s ease; }
-.transform { transform: translateZ(0); }
-.hover:scale-105:hover { transform: scale(1.05); }
