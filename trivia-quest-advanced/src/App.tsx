@@ -75,6 +75,13 @@ const RouteRenderer = ({ routes }: { routes: Route[] }) => {
 };
 
 function AppContent() {
+  const location = useLocation();
+  const noLayoutRoutes = ['/login', '/'];
+
+  if (noLayoutRoutes.includes(location.pathname)) {
+    return <RouteRenderer routes={appRoutes} />;
+  }
+
   return (
     <MainLayout>
       <RouteRenderer routes={appRoutes} />

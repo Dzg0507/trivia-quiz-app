@@ -1,309 +1,126 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { gsap } from 'gsap';
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
+import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing';
 
-gsap.registerPlugin(MotionPathPlugin);
+const vertexShader = `
+  uniform float u_time;
+  uniform vec2 u_mouse;
 
-const Loom = () => {
-  const group = useRef<THREE.Group>(null);
+  varying float v_dist;
 
-  useFrame(() => {
-    if (group.current) {
-      group.current.rotation.y += 0.001;
-      group.current.rotation.x += 0.0005;
-    }
-  });
+  void main() {
+    vec3 pos = position;
 
-  const loomParts = useMemo(() => {
-    const parts = [];
-    const mainArm = new THREE.BoxGeometry(0.2, 10, 0.2);
-    const gear = new THREE.TorusGeometry(1.5, 0.1, 8, 32);
-    const smallGear = new THREE.TorusKnotGeometry(0.5, 0.05, 100, 16);
-    const connection = new THREE.CylinderGeometry(0.05, 0.05, 6, 16);
+    // More complex animation
+    float time = u_time * 0.3;
+    pos.x += sin(pos.y * 1.5 + time) * cos(pos.x * 1.5 + time) * 0.7;
+    pos.y += cos(pos.z * 1.5 + time) * sin(pos.y * 1.5 + time) * 0.7;
+    pos.z += sin(pos.x * 1.5 + time) * cos(pos.z * 1.5 + time) * 0.7;
 
-    for (let i = 0; i < 8; i++) {
-      const angle = (i / 8) * Math.PI * 2;
-      parts.push({
-        geometry: mainArm,
-        position: [Math.sin(angle) * 4, 0, Math.cos(angle) * 4],
-        rotation: [0, angle, Math.PI / 2],
-      });
-    }
+    // Mouse interaction
+    float dist = distance(pos.xy, u_mouse);
+    pos.z += smoothstep(0.0, 1.5, 1.5 - dist) * 2.0;
 
-    parts.push({ geometry: gear, position: [0, 4, 0], rotation: [Math.PI / 2, 0, 0] });
-    parts.push({ geometry: gear, position: [0, -4, 0], rotation: [Math.PI / 2, 0, 0] });
-    parts.push({ geometry: smallGear, position: [2, 2, 2], rotation: [Math.random(), Math.random(), Math.random()] });
-    parts.push({ geometry: smallGear, position: [-2, -2, -2], rotation: [Math.random(), Math.random(), Math.random()] });
-    parts.push({ geometry: connection, position: [0, 0, 0], rotation: [0, 0, 0] });
+    vec4 modelPosition = modelMatrix * vec4(pos, 1.0);
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
 
-    return parts;
+    gl_Position = projectedPosition;
+    gl_PointSize = 4.0;
+
+    v_dist = dist;
+  }
+`;
+
+const fragmentShader = `
+  uniform float u_time;
+  varying float v_dist;
+
+  void main() {
+    float alpha = smoothstep(0.0, 1.0, 1.0 - v_dist);
+    gl_FragColor = vec4(0.2, 0.5, 1.0, alpha);
+  }
+`;
+
+const Particles = () => {
+  const count = 5000;
+  const { viewport } = useThree();
+  const pointsRef = useRef<THREE.Points>(null);
+  const shaderRef = useRef<THREE.ShaderMaterial>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const x = (event.clientX / window.innerWidth) * 2 - 1;
+      const y = -(event.clientY / window.innerHeight) * 2 + 1;
+      setMousePos({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  return (
-    <group ref={group} position={[0, 0, -8]}>
-      {loomParts.map((part, i) => (
-        <mesh key={i} position={new THREE.Vector3(...part.position)} rotation={new THREE.Euler(...part.rotation)}>
-          <primitive object={part.geometry} />
-          <meshStandardMaterial color="#1a1a1a" roughness={0.7} metalness={1} emissive="#000000" />
-        </mesh>
-      ))}
-    </group>
-  );
-};
-
-const Shuttle = React.forwardRef((props, ref) => {
-  const group = useRef<THREE.Group>(null);
-  useFrame(() => {
-    if (group.current) {
-      group.current.rotation.y += 0.01;
+  const positions = useMemo(() => {
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const x = (Math.random() - 0.5) * viewport.width;
+      const y = (Math.random() - 0.5) * viewport.height;
+      const z = (Math.random() - 0.5) * 5;
+      positions.set([x, y, z], i * 3);
     }
-  });
+    return positions;
+  }, [count, viewport.width, viewport.height]);
 
-  return (
-    <group {...props} ref={ref}>
-      <group ref={group}>
-        <mesh>
-          <sphereGeometry args={[0.5, 32, 32]} />
-          <meshStandardMaterial color="black" roughness={0.1} metalness={0.8} emissive="#111111" />
-        </mesh>
-        {[...Array(8)].map((_, i) => {
-          const angle = (i / 8) * Math.PI * 2;
-          return (
-            <mesh
-              key={i}
-              position={[Math.sin(angle) * 0.2, 0, Math.cos(angle) * 0.2]}
-              rotation={[Math.PI / 2, 0, angle]}
-            >
-              <cylinderGeometry args={[0.02, 0.01, 0.4, 8]} />
-              <meshStandardMaterial color="#b5a642" roughness={0.4} metalness={1} />
-            </mesh>
-          );
-        })}
-      </group>
-    </group>
-  );
-});
-
-import { vertexShader, fragmentShader } from './threadShaders';
-
-const Thread = ({ curve, material, progress }) => {
-  const geometryRef = useRef<THREE.TubeGeometry>(null);
-  const shaderMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        u_time: { value: 0 },
-        u_color: { value: new THREE.Color(material.color) },
-      },
-      transparent: true,
-    });
-  }, [material.color]);
+  const uniforms = useMemo(() => ({
+    u_time: { value: 0 },
+    u_mouse: { value: new THREE.Vector2(mousePos.x, mousePos.y) },
+  }), [mousePos]);
 
   useFrame(({ clock }) => {
-    shaderMaterial.uniforms.u_time.value = clock.getElapsedTime();
+    if (shaderRef.current) {
+      shaderRef.current.uniforms.u_time.value = clock.getElapsedTime();
+      shaderRef.current.uniforms.u_mouse.value.x = mousePos.x * (viewport.width / 2);
+      shaderRef.current.uniforms.u_mouse.value.y = mousePos.y * (viewport.height / 2);
+    }
   });
 
-  useEffect(() => {
-    if (geometryRef.current) {
-      const totalLength = geometryRef.current.attributes.position.count;
-      geometryRef.current.setDrawRange(0, totalLength * progress);
-    }
-  }, [progress]);
-
   return (
-    <mesh>
-      <tubeGeometry ref={geometryRef} args={[curve, 64, 0.1, 8, false]} />
-      <primitive object={shaderMaterial} />
-    </mesh>
-  );
-};
-
-
-const TitleWeave = ({ letterCurves, progress }) => {
-  return (
-    <group>
-      {letterCurves.map((curve, i) => (
-        <Thread
-          key={i}
-          curve={curve}
-          material={new THREE.MeshBasicMaterial({ color: '#ffffff', toneMapped: false })}
-          progress={progress}
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
         />
-      ))}
-    </group>
+      </bufferGeometry>
+      <shaderMaterial
+        ref={shaderRef}
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        uniforms={uniforms}
+        transparent
+      />
+    </points>
   );
 };
 
-const useLoomController = (threads, titleThreads, unravel) => {
-  const { camera } = useThree();
-  const shuttleRefs = useRef(threads.map(() => React.createRef<THREE.Group>()));
-  const [titleProgress, setTitleProgress] = useState(0);
-  const [threadProgress, setThreadProgress] = useState(threads.map(() => 0));
-
-  useEffect(() => {
-    const tl = gsap.timeline({ paused: true });
-
-    // Main weaving animation
-    threads.forEach((thread, i) => {
-      const shuttle = shuttleRefs.current[i].current;
-      if (!shuttle) return;
-      tl.to(shuttle.position, {
-        duration: 4,
-        motionPath: { path: thread.curve.getPoints(50).map(p => ({x: p.x, y: p.y, z: p.z})), align: "self" },
-      }, i * 0.5);
-
-      const progress = { value: 0 };
-      tl.to(progress, {
-        value: 1,
-        duration: 4,
-        ease: 'power1.inOut',
-        onUpdate: () => {
-          setThreadProgress(prev => {
-            const newProgress = [...prev];
-            newProgress[i] = progress.value;
-            return newProgress;
-          });
-        }
-      }, i * 0.5);
-    });
-
-    // Title weave animation
-    tl.to({ value: 0 }, {
-      value: 1,
-      duration: 2,
-      onUpdate: function() {
-        setTitleProgress(this.targets()[0].value);
-      }
-    }, "-=1"); // Overlap with the end of the main animation
-
-    if (unravel) {
-      tl.reverse(0);
-    } else {
-      tl.play();
-    }
-
-    return () => tl.kill();
-  }, [threads, titleThreads, camera, unravel]);
-
-  return { shuttleRefs, titleProgress, threadProgress };
-};
-
-const SceneContent = ({ inspect, unravel }) => {
-  const threads = useMemo(() => [
-    // ... same thread definitions
-        {
-      curve: new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-4, -3, -5),
-        new THREE.Vector3(0, 3, -5),
-        new THREE.Vector3(4, -3, -5),
-      ]),
-      material: new THREE.MeshBasicMaterial({ color: '#00ffff', toneMapped: false }),
-      progress: 0,
-    },
-    {
-      curve: new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-4, 3, -5),
-        new THREE.Vector3(0, -3, -5),
-        new THREE.Vector3(4, 3, -5),
-      ]),
-      material: new THREE.MeshBasicMaterial({ color: '#ff00ff', toneMapped: false }),
-      progress: 0,
-    },
-  ], []);
-
-  const letterCurves = useMemo(() => {
-    const letterSpacing = 2;
-    const startX = -5;
-    const y = 0;
-    const z = -4;
-
-    const t = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX, y + 1, z),
-        new THREE.Vector3(startX + 2, y + 1, z),
-    ]);
-    const t_stem = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + 1, y + 1, z),
-        new THREE.Vector3(startX + 1, y - 1, z),
-    ]);
-    const e = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + letterSpacing * 1 + 2, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 1, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 1, y, z),
-        new THREE.Vector3(startX + letterSpacing * 1 + 2, y, z),
-        new THREE.Vector3(startX + letterSpacing * 1, y, z),
-        new THREE.Vector3(startX + letterSpacing * 1, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 1 + 2, y - 1, z),
-    ]);
-    const n = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + letterSpacing * 2, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 2, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 2 + 2, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 2 + 2, y + 1, z),
-    ]);
-    const s = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + letterSpacing * 3 + 2, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 3, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 3, y, z),
-        new THREE.Vector3(startX + letterSpacing * 3 + 2, y, z),
-        new THREE.Vector3(startX + letterSpacing * 3 + 2, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 3, y - 1, z),
-    ]);
-    const o = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + letterSpacing * 4, y, z),
-        new THREE.Vector3(startX + letterSpacing * 4, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 4 + 2, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 4 + 2, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 4, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 4, y, z),
-    ]);
-    const r = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(startX + letterSpacing * 5, y - 1, z),
-        new THREE.Vector3(startX + letterSpacing * 5, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 5 + 2, y + 1, z),
-        new THREE.Vector3(startX + letterSpacing * 5 + 2, y, z),
-        new THREE.Vector3(startX + letterSpacing * 5, y, z),
-        new THREE.Vector3(startX + letterSpacing * 5 + 2, y - 1, z),
-    ]);
-    return [t, t_stem, e, n, s, o, r];
-  }, []);
-
-  const { shuttleRefs, titleProgress, threadProgress } = useLoomController(threads, letterCurves, unravel);
-  const { camera } = useThree();
-
-  useEffect(() => {
-    if (inspect) {
-      gsap.to(camera.position, { z: 5, duration: 1 });
-    } else {
-      gsap.to(camera.position, { z: 10, duration: 1 });
-    }
-  }, [inspect, camera]);
-
+const SceneContent = () => {
   return (
     <>
-      <ambientLight intensity={0.2} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
-      <pointLight position={[-10, -10, -10]} intensity={0.5} color="magenta" />
-      <Loom />
-      {threads.map((thread, i) => (
-        <React.Fragment key={i}>
-          <Shuttle ref={shuttleRefs.current[i]} position={thread.curve.getPoint(0)} />
-          <Thread {...thread} progress={threadProgress[i]} />
-        </React.Fragment>
-      ))}
-      <TitleWeave letterCurves={letterCurves} progress={titleProgress} />
-      <OrbitControls />
+      <Particles />
     </>
   );
 };
 
-const LoomScene = ({ inspect, unravel }) => {
+const LoomScene = () => {
   return (
-    <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
-      <SceneContent inspect={inspect} unravel={unravel} />
+    <Canvas camera={{ position: [0, 0, 2.5], fov: 60 }}>
+      <SceneContent />
+      <EffectComposer>
+        <Bloom luminanceThreshold={0.1} luminanceSmoothing={0.9} height={300} />
+        <DepthOfField focusDistance={0.0} focalLength={0.2} bokehScale={2} />
+      </EffectComposer>
     </Canvas>
   );
 };
