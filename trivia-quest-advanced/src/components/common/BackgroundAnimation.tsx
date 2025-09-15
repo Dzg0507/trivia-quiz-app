@@ -46,6 +46,10 @@ const BackgroundAnimation = () => {
     if (state.torusKnot) {
       state.torusKnot.rotation.x += 0.005;
       state.torusKnot.rotation.y += 0.005;
+
+      const time = performance.now() * 0.0002;
+      const hue = (Math.sin(time) + 1) / 2; // Varies between 0 and 1
+      state.torusKnot.material.color.setHSL(hue, 0.8, 0.6);
     }
     if (state.renderer && state.scene && state.camera) {
       state.renderer.render(state.scene, state.camera);
@@ -86,18 +90,6 @@ const BackgroundAnimation = () => {
         ease: 'power2.out',
       });
 
-      const hue = (clientX / clientWidth);
-      const saturation = 0.8;
-      const lightness = 0.6;
-      const newColor = new THREE.Color().setHSL(hue, saturation, lightness);
-
-      gsap.to(state.torusKnot.material.color, {
-        r: newColor.r,
-        g: newColor.g,
-        b: newColor.b,
-        duration: 1.5,
-        ease: 'power2.out',
-      });
     }
   }, [state]);
 
@@ -125,29 +117,6 @@ const BackgroundAnimation = () => {
       mount.removeChild(renderer.domElement);
     };
   }, [animate, handleResize, handleMouseMove, state]);
-
-  useEffect(() => {
-    if (state.torusKnot && questionsLength > 0) {
-      const progress = currentIndex / questionsLength;
-      let targetColor;
-
-      if (progress < 0.33) {
-        targetColor = '#ffcc00';
-      } else if (progress < 0.66) {
-        targetColor = '#00ccff';
-      } else {
-        targetColor = '#cc00ff';
-      }
-
-      gsap.to(state.torusKnot.material.color, {
-        r: new THREE.Color(targetColor).r,
-        g: new THREE.Color(targetColor).g,
-        b: new THREE.Color(targetColor).b,
-        duration: 1,
-        ease: 'power2.out',
-      });
-    }
-  }, [currentIndex, questionsLength, state]);
 
   return <div ref={mountRef} className="absolute top-0 left-0 w-full h-full -z-10" />;
 };

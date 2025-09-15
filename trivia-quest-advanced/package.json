@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.3.0",
     "axios": "^1.12.1",
+    "cannon-es": "^0.20.0",
     "canvas-confetti": "^1.9.3",
     "firebase": "^12.2.1",
     "framer-motion": "^12.23.12",

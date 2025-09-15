@@ -16,14 +16,45 @@ export interface UserProfile {
   bio: string;
 }
 
+export interface Quest {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  theme: string;
+  type: 'daily' | 'weekly' | 'monthly';
+  conditions: {
+    stat: keyof UserStats;
+    operator: '>=' | '<=' | '==';
+    value: number;
+  }[];
+  reward: number;
+}
+
+export interface UserQuest {
+  questId: string;
+  progress: number;
+  completed: boolean;
+  claimed: boolean;
+}
+
+export interface QuestWithDefinition extends UserQuest {
+  definition: Quest;
+}
+
 export interface UserData {
   username: string;
   createdAt: Date;
   stats: UserStats;
   profile: UserProfile;
   achievements: string[];
-  quests: string[];
+  quests: UserQuest[];
   badges: string[];
+  lastQuestGeneration: {
+    daily: number; // timestamp
+    weekly: number; // timestamp
+    monthly: number; // timestamp
+  };
   // Add other fields as they appear in your user documents
 }
 
@@ -76,6 +107,11 @@ export const firestoreService = {
         },
         achievements: [],
         quests: [],
+        lastQuestGeneration: {
+          daily: 0,
+          weekly: 0,
+          monthly: 0,
+        },
         ...initialData
       }, { merge: true });
     }
@@ -135,17 +171,58 @@ export const firestoreService = {
   },
 
   // Get user quests
-  getUserQuests: async (userId: string): Promise<string[]> => {
+  getUserQuests: async (userId: string): Promise<UserQuest[]> => {
     const userData = await firestoreService.getUserData(userId);
     return userData ? userData.quests : [];
   },
 
-  // Add quest to user
-  addQuestToUser: async (userId: string, questId: string) => {
+  // Assign a quest to a user
+  assignQuestToUser: async (userId: string, quest: Quest) => {
     const userRef = firestoreService.getUserDocRef(userId);
+    const newQuest: UserQuest = {
+      questId: quest.id,
+      progress: 0,
+      completed: false,
+      claimed: false,
+    };
     await updateDoc(userRef, {
-      quests: arrayUnion(questId)
+      quests: arrayUnion(newQuest)
     });
+  },
+
+  // Update a specific quest in the user's quests array
+  updateUserQuest: async (userId: string, updatedQuest: UserQuest) => {
+    const userRef = firestoreService.getUserDocRef(userId);
+    const userData = await firestoreService.getUserData(userId);
+    if (userData) {
+      const updatedQuests = userData.quests.map(q =>
+        q.questId === updatedQuest.questId ? updatedQuest : q
+      );
+      await updateDoc(userRef, { quests: updatedQuests });
+    }
+  },
+
+  // Claim reward for a completed quest
+  claimQuestReward: async (userId: string, quest: QuestWithDefinition) => {
+    const userRef = firestoreService.getUserDocRef(userId);
+    const userData = await firestoreService.getUserData(userId);
+    if (userData) {
+      const updatedQuest: UserQuest = {
+        questId: quest.questId,
+        progress: quest.progress,
+        completed: quest.completed,
+        claimed: true,
+      };
+      const updatedQuests = userData.quests.map(q =>
+        q.questId === quest.questId ? updatedQuest : q
+      );
+      const newTotalScore = userData.stats.totalScore + quest.definition.reward;
+
+      await updateDoc(userRef, {
+        quests: updatedQuests,
+        'stats.totalScore': newTotalScore,
+      });
+    }
   },
 
   // Get leaderboard data

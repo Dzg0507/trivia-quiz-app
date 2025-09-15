@@ -14,6 +14,7 @@ import GlobalLoadingIndicator from './components/common/GlobalLoadingIndicator.t
 import { AnimatePresence, motion } from 'framer-motion';
 import './app.css';
 import { appRoutes } from './config/routes.tsx';
+import { useQuestGenerator } from './hooks/useQuestGenerator.tsx';
 
 interface Route {
   path: string;
@@ -75,6 +76,7 @@ const RouteRenderer = ({ routes }: { routes: Route[] }) => {
 };
 
 function AppContent() {
+  useQuestGenerator();
   const location = useLocation();
   const noLayoutRoutes = ['/login', '/'];
 

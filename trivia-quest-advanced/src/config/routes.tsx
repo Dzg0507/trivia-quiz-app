@@ -5,6 +5,7 @@ const StartScreen = lazy(() => import('../components/StartScreen.tsx'));
 const QuizPage = lazy(() => import('../components/QuizPage.tsx'));
 const Profile = lazy(() => import('../components/Profile.tsx'));
 const Quests = lazy(() => import('../components/Quests.tsx'));
+const QuestWorld = lazy(() => import('../components/QuestWorld.tsx'));
 const Login = lazy(() => import('../components/Login.tsx'));
 const Leaderboard = lazy(() => import('../components/Leaderboard.tsx'));
 const Achievements = lazy(() => import('../components/Achievements.tsx'));
@@ -34,7 +35,7 @@ export const appRoutes = [
   },
   {
     path: '/quests',
-    element: <Quests />,
+    element: <QuestWorld />,
     protected: true,
     name: 'Quests',
   },

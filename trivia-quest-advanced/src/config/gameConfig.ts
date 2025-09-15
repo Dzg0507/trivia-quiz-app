@@ -28,8 +28,4 @@ export const QUIZ_POINTS = {
   INCORRECT: 5,
 };
 
-// Placeholder for QUEST_DEFINITIONS
-export const QUEST_DEFINITIONS = [
-  { id: 'daily-quiz', name: 'Complete a Daily Quiz', description: 'Finish one quiz today', type: 'daily', reward: 20 },
-  { id: 'answer-5-correct', name: 'Answer 5 Correctly', description: 'Get 5 correct answers in a single quiz', type: 'single_quiz_correct', threshold: 5, reward: 30 },
-];
+// Quest definitions are now in questDefinitions.ts
