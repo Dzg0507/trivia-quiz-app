@@ -85,7 +85,7 @@ const StartScreen = () => {
             className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
             whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.1)' }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => handleNavigate('/quiz')}
+            onClick={() => handleNavigate('/quests')}
           >
             START QUEST
           </motion.button>

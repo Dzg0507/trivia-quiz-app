@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics, usePlane, useBox, useSphere } from '@react-three/cannon';
 import { KeyboardControls, OrbitControls, useKeyboardControls } from '@react-three/drei';
@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useQuestManager } from '../hooks/useQuestManager';
 import { COLLISION_GROUPS } from '../config/physicsConfig';
 import { QuestWithDefinition } from '../services/firestoreService';
+import { useNavigate } from 'react-router-dom';
 
 enum Controls {
   forward = 'forward',
@@ -57,10 +58,14 @@ const Player = () => {
   const velocity = useRef([0, 0, 0]);
 
   useEffect(() => {
-    api.velocity.subscribe((v) => (velocity.current = v));
-  }, [api.velocity]);
+    if (api && api.velocity) {
+      api.velocity.subscribe((v: [number, number, number]) => (velocity.current = v));
+    }
+  }, [api]);
 
   useFrame((state) => {
+    if (!api) return; // Add this check
+
     const { forward, backward, left, right, jump } = get();
     const speed = 5;
     const frontVector = new THREE.Vector3(0, 0, Number(backward) - Number(forward));
@@ -88,7 +93,7 @@ const Player = () => {
   );
 };
 
-const QuestObject = ({ position, quest }: { position: [number, number, number], quest: QuestWithDefinition }) => {
+const QuestObject = ({ position, quest, onQuestCollision }: { position: [number, number, number], quest: QuestWithDefinition, onQuestCollision: (quest: QuestWithDefinition) => void }) => {
   const [ref] = useBox(() => ({
     isTrigger: true,
     args: [2, 2, 2],
@@ -97,6 +102,7 @@ const QuestObject = ({ position, quest }: { position: [number, number, number], 
     collisionFilterMask: COLLISION_GROUPS.PLAYER,
     onCollide: () => {
       console.log('Collided with quest:', quest.definition.name);
+      onQuestCollision(quest);
     },
   }));
 
@@ -110,6 +116,19 @@ const QuestObject = ({ position, quest }: { position: [number, number, number], 
 
 const QuestWorld = () => {
   const { quests, loading } = useQuestManager();
+  const [activeQuest, setActiveQuest] = useState<QuestWithDefinition | null>(null);
+  const navigate = useNavigate();
+
+  const handleQuestCollision = (quest: QuestWithDefinition) => {
+    setActiveQuest(quest);
+  };
+
+  const startQuiz = () => {
+    if (activeQuest) {
+      console.log('Starting quiz for quest:', activeQuest.definition.name);
+      navigate('/quiz');
+    }
+  };
 
   if (loading) {
     return (
@@ -132,6 +151,24 @@ const QuestWorld = () => {
         { name: 'jump', keys: ['Space'] },
       ]}
     >
+      {activeQuest && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-6 rounded-lg shadow-lg z-10 text-center">
+          <h3 className="text-xl font-bold text-white mb-4">Quest Found: {activeQuest.definition.name}</h3>
+          <p className="text-trivia-gray-light mb-6">{activeQuest.definition.description}</p>
+          <button
+            onClick={startQuiz}
+            className="px-6 py-3 bg-trivia-gold text-black font-bold rounded-md hover:bg-yellow-500 transition-colors duration-300"
+          >
+            Start Quiz
+          </button>
+          <button
+            onClick={() => setActiveQuest(null)}
+            className="ml-4 px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 transition-colors duration-300"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <Canvas camera={{ position: [0, 10, 20], fov: 60 }}>
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
@@ -142,7 +179,7 @@ const QuestWorld = () => {
           <Obstacle position={[0, 1, -15]} />
           <Player />
           {quests.map((quest, i) => (
-            <QuestObject key={quest.questId} position={[i * 5, 1, -20]} quest={quest} />
+            <QuestObject key={quest.questId} position={[i * 5, 1, -20]} quest={quest} onQuestCollision={handleQuestCollision} />
           ))}
         </Physics>
         <OrbitControls />

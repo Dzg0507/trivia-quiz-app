@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,7 +20,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@react-three/cannon': './mock/react-three-cannon.js',
+      // Use path.resolve to create an absolute path
+      '@react-three/cannon': path.resolve(__dirname, './mock/react-three-cannon.jsx'),
     },
   },
   build: {

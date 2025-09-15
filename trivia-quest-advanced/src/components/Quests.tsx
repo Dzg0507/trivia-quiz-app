@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuestManager } from '../hooks/useQuestManager';
 import { useAuth } from '../hooks/useAuth';
 import { firestoreService, QuestWithDefinition } from '../services/firestoreService';
