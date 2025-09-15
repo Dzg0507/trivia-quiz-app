@@ -2,7 +2,7 @@ import { lazy } from 'react';
 
 // Lazy load components for code splitting
 const StartScreen = lazy(() => import('../components/StartScreen.tsx'));
-const Quiz = lazy(() => import('../components/Quiz.tsx'));
+const QuizPage = lazy(() => import('../components/QuizPage.tsx'));
 const Profile = lazy(() => import('../components/Profile.tsx'));
 const Quests = lazy(() => import('../components/Quests.tsx'));
 const Login = lazy(() => import('../components/Login.tsx'));
@@ -28,7 +28,7 @@ export const appRoutes = [
   },
   {
     path: '/quiz',
-    element: <Quiz onNavigateHome={() => {}} userStats={null} updateUserStats={() => {}} isLoading={false} />,
+    element: <QuizPage />,
     protected: true,
     name: 'Quiz',
   },

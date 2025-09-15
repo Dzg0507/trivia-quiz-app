@@ -46,14 +46,14 @@ float snoise(vec2 v) {
 
 void main() {
   float distance_from_center = abs(vUv.y - 0.5);
-  float core = smoothstep(0.05, 0.0, distance_from_center);
-  float glow = smoothstep(0.5, 0.0, distance_from_center);
+  float core = smoothstep(0.1, 0.0, distance_from_center);
+  float glow = smoothstep(0.7, 0.0, distance_from_center);
 
   float noise = snoise(vec2(vUv.x * 10.0, u_time * 0.5));
-  float energy = (glow + core) * (0.5 + abs(noise) * 0.5);
+  float energy = (glow + core) * (0.7 + abs(noise) * 0.3);
 
-  vec3 final_color = u_color * energy + vec3(1.0) * core;
+  vec3 final_color = u_color * energy + vec3(1.0) * core * 2.0;
 
-  gl_FragColor = vec4(final_color, energy);
+  gl_FragColor = vec4(final_color, energy * 1.5);
 }
 `;

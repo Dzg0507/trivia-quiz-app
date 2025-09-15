@@ -158,7 +158,8 @@ const Quiz: React.FC<QuizProps> = React.memo(({ onNavigateHome, userStats, updat
             </motion.button>
             <motion.button
               onClick={onNavigateHome}
-              className="btn bg-trivia-gray hover:bg-trivia-gray-dark w-full flex items-center justify-center gap-2"
+              disabled={userStatsLoading}
+              className="btn btn-gold w-full flex items-center justify-center gap-2"
               whileTap={{ scale: 0.95 }}
               whileHover={{ scale: 1.05 }}
             >

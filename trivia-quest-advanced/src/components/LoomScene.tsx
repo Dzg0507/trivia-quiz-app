@@ -116,7 +116,7 @@ const Thread = ({ curve, material, progress }) => {
 
   return (
     <mesh>
-      <tubeGeometry ref={geometryRef} args={[curve, 64, 0.02, 8, false]} />
+      <tubeGeometry ref={geometryRef} args={[curve, 64, 0.1, 8, false]} />
       <primitive object={shaderMaterial} />
     </mesh>
   );
@@ -181,7 +181,7 @@ const useLoomController = (threads, titleThreads, unravel) => {
     }, "-=1"); // Overlap with the end of the main animation
 
     if (unravel) {
-      tl.reverse();
+      tl.reverse(0);
     } else {
       tl.play();
     }
@@ -192,7 +192,7 @@ const useLoomController = (threads, titleThreads, unravel) => {
   return { shuttleRefs, titleProgress, threadProgress };
 };
 
-const LoomScene = ({ inspect, unravel }) => {
+const SceneContent = ({ inspect, unravel }) => {
   const threads = useMemo(() => [
     // ... same thread definitions
         {
@@ -283,7 +283,7 @@ const LoomScene = ({ inspect, unravel }) => {
   }, [inspect, camera]);
 
   return (
-    <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
+    <>
       <ambientLight intensity={0.2} />
       <directionalLight position={[10, 10, 5]} intensity={1} />
       <pointLight position={[-10, -10, -10]} intensity={0.5} color="magenta" />
@@ -296,6 +296,14 @@ const LoomScene = ({ inspect, unravel }) => {
       ))}
       <TitleWeave letterCurves={letterCurves} progress={titleProgress} />
       <OrbitControls />
+    </>
+  );
+};
+
+const LoomScene = ({ inspect, unravel }) => {
+  return (
+    <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
+      <SceneContent inspect={inspect} unravel={unravel} />
     </Canvas>
   );
 };
