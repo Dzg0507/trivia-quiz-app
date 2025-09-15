@@ -1,6 +1,8 @@
-import { useState, ReactNode } from 'react';
-import { AuthContext } from './AuthContextValue.ts';
+import React, { useState, ReactNode } from 'react';
+import { AuthContextType } from './AuthContextValue.ts';
 import { User } from 'firebase/auth';
+
+export const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;

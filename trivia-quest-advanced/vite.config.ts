@@ -13,6 +13,11 @@ export default defineConfig({
       brotliSize: true,
     }),
   ],
+  resolve: {
+    alias: {
+      '@react-three/cannon': './mock/react-three-cannon.js',
+    },
+  },
   build: {
     rollupOptions: {
       output: {

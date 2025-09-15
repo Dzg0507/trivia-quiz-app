@@ -14,6 +14,12 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@react-three/cannon": ["./mock/react-three-cannon.js"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
@@ -21,6 +27,6 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client"]
   },
-  "include": ["src"],
+  "include": ["src", "vitest.setup.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

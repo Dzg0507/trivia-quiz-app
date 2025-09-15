@@ -95,8 +95,6 @@ export const triviaApiService = {
     }
 
     try {
-      console.log(`Attempting to fetch from ${currentApi.name}...`);
-
       let url = currentApi.baseUrl;
       if (currentApi.name === 'Open Trivia DB') {
         url += `?amount=10&type=multiple`;
@@ -123,14 +121,12 @@ export const triviaApiService = {
         throw new Error('Invalid question format received from API');
       }
 
-      console.log(`Successfully fetched ${questions.length} questions from ${currentApi.name}`);
       return { data: questions, error: null, status: 'success' };
 
     } catch (error: unknown) {
       if (axios.isCancel(error)) {
         const apiError: ApiError = { message: (error as Error).message, isCanceled: true, code: 'REQUEST_CANCELED' };
-        logError(new Error(apiError.message), undefined, { ...apiError }, 'info');
-        // No notification for user-initiated cancellation
+        // No notification or logging for user-initiated cancellation
         return { data: null, error: apiError, status: 'error' };
       }
 
