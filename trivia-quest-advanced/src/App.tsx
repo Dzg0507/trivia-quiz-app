@@ -12,7 +12,7 @@ import BackgroundAnimation from './components/common/BackgroundAnimation.tsx';
 import NotificationToastContainer from './components/common/NotificationToast.tsx';
 import GlobalLoadingIndicator from './components/common/GlobalLoadingIndicator.tsx';
 import { AnimatePresence, motion } from 'framer-motion';
-import './App.css';
+import './app.css';
 import { appRoutes } from './config/routes.tsx';
 
 interface Route {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import LoomScene from './LoomScene';
@@ -22,6 +22,8 @@ const itemVariants = {
 
 const StartScreen = () => {
   const navigate = useNavigate();
+  const [inspect, setInspect] = useState(false);
+  const [unravel, setUnravel] = useState(false);
 
   const handleStartQuiz = () => {
     navigate('/quiz');
@@ -30,7 +32,7 @@ const StartScreen = () => {
   return (
     <div className="relative h-screen w-screen bg-black">
       <div className="absolute inset-0 z-0">
-        <LoomScene />
+        <LoomScene inspect={inspect} unravel={unravel} />
       </div>
       <motion.div
         className="absolute inset-0 z-10 flex flex-col items-center justify-center"
@@ -57,7 +59,7 @@ const StartScreen = () => {
             className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
             whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.1)' }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => console.log('Inspect pattern clicked')}
+            onClick={() => setInspect(!inspect)}
           >
             INSPECT PATTERN
           </motion.button>
@@ -65,7 +67,7 @@ const StartScreen = () => {
             className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
             whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.1)' }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => console.log('Unravel clicked')}
+            onClick={() => setUnravel(true)}
           >
             UNRAVEL
           </motion.button>

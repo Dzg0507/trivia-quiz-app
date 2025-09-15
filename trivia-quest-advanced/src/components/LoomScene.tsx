@@ -1,5 +1,6 @@
 import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin';
@@ -65,7 +66,7 @@ const Shuttle = React.forwardRef((props, ref) => {
     <group {...props} ref={ref}>
       <group ref={group}>
         <mesh>
-          <sphereGeometry args={[0.15, 32, 32]} />
+          <sphereGeometry args={[0.5, 32, 32]} />
           <meshStandardMaterial color="black" roughness={0.1} metalness={0.8} emissive="#111111" />
         </mesh>
         {[...Array(8)].map((_, i) => {
@@ -137,14 +138,14 @@ const TitleWeave = ({ letterCurves, progress }) => {
   );
 };
 
-const useLoomController = (threads, titleThreads) => {
+const useLoomController = (threads, titleThreads, unravel) => {
   const { camera } = useThree();
   const shuttleRefs = useRef(threads.map(() => React.createRef<THREE.Group>()));
   const [titleProgress, setTitleProgress] = useState(0);
   const [threadProgress, setThreadProgress] = useState(threads.map(() => 0));
 
   useEffect(() => {
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ paused: true });
 
     // Main weaving animation
     threads.forEach((thread, i) => {
@@ -179,13 +180,19 @@ const useLoomController = (threads, titleThreads) => {
       }
     }, "-=1"); // Overlap with the end of the main animation
 
+    if (unravel) {
+      tl.reverse();
+    } else {
+      tl.play();
+    }
+
     return () => tl.kill();
-  }, [threads, titleThreads, camera]);
+  }, [threads, titleThreads, camera, unravel]);
 
   return { shuttleRefs, titleProgress, threadProgress };
 };
 
-const LoomScene = () => {
+const LoomScene = ({ inspect, unravel }) => {
   const threads = useMemo(() => [
     // ... same thread definitions
         {
@@ -264,7 +271,16 @@ const LoomScene = () => {
     return [t, t_stem, e, n, s, o, r];
   }, []);
 
-  const { shuttleRefs, titleProgress, threadProgress } = useLoomController(threads, letterCurves);
+  const { shuttleRefs, titleProgress, threadProgress } = useLoomController(threads, letterCurves, unravel);
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (inspect) {
+      gsap.to(camera.position, { z: 5, duration: 1 });
+    } else {
+      gsap.to(camera.position, { z: 10, duration: 1 });
+    }
+  }, [inspect, camera]);
 
   return (
     <Canvas camera={{ position: [0, 0, 10], fov: 60 }}>
@@ -279,6 +295,7 @@ const LoomScene = () => {
         </React.Fragment>
       ))}
       <TitleWeave letterCurves={letterCurves} progress={titleProgress} />
+      <OrbitControls />
     </Canvas>
   );
 };
