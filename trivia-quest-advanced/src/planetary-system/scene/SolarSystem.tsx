@@ -6,7 +6,6 @@ import GiantsDeep from './planets/GiantsDeep.tsx';
 import TimberHearth from './planets/TimberHearth.tsx';
 import DarkBramble from './planets/DarkBramble.tsx';
 import QuantumMoon from './planets/QuantumMoon.tsx';
-
 import { useSolarSystemStore } from '../States';
 
 interface SolarSystemProps {

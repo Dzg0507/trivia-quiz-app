@@ -22,6 +22,8 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) =>
     stopLoading,
   }), [isLoading, startLoading, stopLoading]);
 
+  console.log('LoadingContext value:', value);
+
   return (
     <LoadingContext.Provider value={value}>
       {children}

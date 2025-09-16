@@ -6,5 +6,6 @@ export const useQuizProgress = () => {
   if (!context) {
     throw new Error('useQuizProgress must be used within a QuizProgressProvider');
   }
+  console.log('useQuizProgress context:', context);
   return context;
 };

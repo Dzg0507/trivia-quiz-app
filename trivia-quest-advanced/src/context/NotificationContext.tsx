@@ -19,6 +19,8 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
   const value = useMemo(() => ({ notifications, addNotification }), [notifications, addNotification]);
 
+  console.log('NotificationContext value:', value);
+
   return (
     <NotificationContext.Provider value={value}>
       {children}

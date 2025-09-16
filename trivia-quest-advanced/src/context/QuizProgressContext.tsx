@@ -14,8 +14,11 @@ const QuizProgressProvider: React.FC<QuizProgressProviderProps> = ({ children })
     setQuestionsLength(length);
   }, []);
 
+  const value = { currentIndex, questionsLength, updateQuizProgress };
+  console.log('QuizProgressContext value:', value);
+
   return (
-    <QuizProgressContext.Provider value={{ currentIndex, questionsLength, updateQuizProgress }}>
+    <QuizProgressContext.Provider value={value}>
       {children}
     </QuizProgressContext.Provider>
   );

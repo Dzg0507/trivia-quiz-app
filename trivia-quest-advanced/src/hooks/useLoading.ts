@@ -6,5 +6,6 @@ export const useLoading = (): LoadingContextType => {
   if (!context) {
     throw new Error('useLoading must be used within a LoadingProvider');
   }
+  console.log('useLoading context:', context);
   return context;
 };
