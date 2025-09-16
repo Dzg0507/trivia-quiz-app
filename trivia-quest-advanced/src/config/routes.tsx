@@ -1,10 +1,10 @@
 import { lazy } from 'react';
+import QuestWorld from '../components/QuestWorld.tsx';
 
 // Lazy load components for code splitting
 const StartScreen = lazy(() => import('../components/StartScreen.tsx'));
 const QuizPage = lazy(() => import('../components/QuizPage.tsx'));
 const Profile = lazy(() => import('../components/Profile.tsx'));
-const QuestWorld = lazy(() => import('../components/QuestWorld.tsx'));
 const Login = lazy(() => import('../components/Login.tsx'));
 const Leaderboard = lazy(() => import('../components/Leaderboard.tsx'));
 const Achievements = lazy(() => import('../components/Achievements.tsx'));

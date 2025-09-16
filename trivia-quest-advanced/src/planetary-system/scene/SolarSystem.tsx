@@ -1,54 +1,34 @@
-import { useRef } from "react";
-import { useSolarSystemStore } from "../States";
-
-import AshTwin from "./planets/AshTwin";
-import BrittleHollow from "./planets/BrittleHollow";
-import EmberTwin from "./planets/EmberTwin";
-import TimberHearth from "./planets/TimberHearth";
-import GiantsDeep from "./planets/GiantsDeep";
-import DarkBramble from "./planets/DarkBramble";
-import QuantumMoon from "./planets/QuantumMoon";
-
-import PlanetAtmosphere from "./PlanetAtmosphere";
-
 import React from 'react';
+import AshTwin from './planets/AshTwin.tsx';
+import EmberTwin from './planets/EmberTwin.tsx';
+import BrittleHollow from './planets/BrittleHollow.tsx';
+import GiantsDeep from './planets/GiantsDeep.tsx';
+import TimberHearth from './planets/TimberHearth.tsx';
+import DarkBramble from './planets/DarkBramble.tsx';
+import QuantumMoon from './planets/QuantumMoon.tsx';
 
 interface SolarSystemProps {
-    onPlanetClick: (planetName: string) => void;
+  onPlanetClick: (planetName: string) => void;
+  focus?: string | null;
 }
 
-const SolarSystem: React.FC<SolarSystemProps> = ({ onPlanetClick }) => {
-    const focus = useSolarSystemStore((state) => state.focus);
-    const moon = useRef(null);
+const SolarSystem: React.FC<SolarSystemProps> = ({ onPlanetClick, focus }) => {
+  const isAnyPlanetFocused = focus !== null && focus !== undefined;
 
-    return (
-        <>
-            <group scale={0.2}>
-                {/* Hourglass Twins */}
-                <group visible={focus === "hour"} name="hour">
-                    <EmberTwin onPlanetClick={onPlanetClick} />
-                    <AshTwin onPlanetClick={onPlanetClick} />
-                </group>
+  return (
+    <group>
+      <group name="Hour" position={[30, 0, 0]}>
+        <EmberTwin onPlanetClick={onPlanetClick} visible={!isAnyPlanetFocused || focus === 'ember-twin'} name="ember-twin" position={[5, 0, 0]} />
+        <AshTwin onPlanetClick={onPlanetClick} visible={!isAnyPlanetFocused || focus === 'ash-twin'} name="ash-twin" position={[-5, 0, 0]} />
+      </group>
 
-                {/* Timber Hearth */}
-                <TimberHearth visible={focus === "timber"} name="timber" onPlanetClick={onPlanetClick} />
-
-                {/* Brittle Hollow */}
-                <BrittleHollow visible={focus === "brittle"} name="brittle" onPlanetClick={onPlanetClick} />
-
-                {/* Giants Deep */}
-                <GiantsDeep visible={focus === "deep"} name="deep" onPlanetClick={onPlanetClick} />
-
-                {/* Dark Bramble */}
-                <DarkBramble visible={focus == "bramble"} name="bramble" onPlanetClick={onPlanetClick} />
-
-                {/* Quantum Moon */}
-                <QuantumMoon name="quantum" ref={moon} onPlanetClick={onPlanetClick} />
-            </group>
-
-            <PlanetAtmosphere moon={moon} />
-        </>
-    );
-}
+      <TimberHearth position={[0, 0, 0]} visible={!isAnyPlanetFocused || focus === 'limber'} name="limber" onPlanetClick={onPlanetClick} />
+      <BrittleHollow position={[-40, 0, 20]} visible={!isAnyPlanetFocused || focus === 'brittle'} name="brittle" onPlanetClick={onPlanetClick} />
+      <GiantsDeep position={[60, 0, -30]} visible={!isAnyPlanetFocused || focus === 'deep'} name="deep" onPlanetClick={onPlanetClick} />
+      <DarkBramble position={[-80, 0, -50]} visible={!isAnyPlanetFocused || focus === 'bramble'} name="bramble" onPlanetClick={onPlanetClick} />
+      <QuantumMoon position={[10, 0, 90]} name="quantum" onPlanetClick={onPlanetClick} />
+    </group>
+  );
+};
 
 export default SolarSystem;

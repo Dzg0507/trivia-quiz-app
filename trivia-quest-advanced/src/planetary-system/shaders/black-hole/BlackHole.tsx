@@ -13,23 +13,39 @@ const BlackHoleMaterial = shaderMaterial(
 );
 extend({ BlackHoleMaterial });
 
+type BlackHoleMaterialImpl = THREE.ShaderMaterial & {
+    sceneBuffer: THREE.Texture | null;
+    resolution: THREE.Vector2;
+};
+
+declare module "@react-three/fiber" {
+    interface ThreeElements {
+        blackHoleMaterial: ThreeElements["shaderMaterial"] & {
+            sceneBuffer?: THREE.Texture | null;
+            resolution?: THREE.Vector2;
+        };
+    }
+}
+
 function BlackHole() {
     const { gl, scene, camera, size, viewport } = useThree();
-    const mesh = useRef<any>(null);
-    const material = useRef<any>(null);
+    const mesh = useRef<THREE.Mesh>(null);
+    const material = useRef<BlackHoleMaterialImpl>(null);
     const renderTarget = useFBO();
 
-    useFrame((state, delta) => {
-        mesh.current.visible = false;
-        gl.setRenderTarget(renderTarget);
-        gl.render(scene, camera);
-        material.current.sceneBuffer = renderTarget.texture;
-        material.current.resolution.set(
-            size.width * viewport.dpr,
-            size.height * viewport.dpr
-        );
-        gl.setRenderTarget(null);
-        mesh.current.visible = true;
+    useFrame(() => {
+        if (mesh.current && material.current) {
+            mesh.current.visible = false;
+            gl.setRenderTarget(renderTarget);
+            gl.render(scene, camera);
+            material.current.sceneBuffer = renderTarget.texture;
+            material.current.resolution.set(
+                size.width * viewport.dpr,
+                size.height * viewport.dpr
+            );
+            gl.setRenderTarget(null);
+            mesh.current.visible = true;
+        }
     });
 
     return (

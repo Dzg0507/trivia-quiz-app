@@ -3,16 +3,24 @@ import PlanetaryApp from '../planetary-system/PlanetaryApp';
 import { useQuestManager } from '../hooks/useQuestManager';
 import { QuestWithDefinition } from '../services/firestoreService';
 import { useNavigate } from 'react-router-dom';
+import QuestMenu from '../components/QuestMenu';
+
+type CameraTarget = {
+  planetName: string;
+  objectName?: string;
+} | null;
 
 const QuestWorld = () => {
   const { quests, loading } = useQuestManager();
   const [activeQuest, setActiveQuest] = useState<QuestWithDefinition | null>(null);
+  const [cameraTarget, setCameraTarget] = useState<CameraTarget>(null);
   const navigate = useNavigate();
 
   const handlePlanetClick = (planetName: string) => {
     const quest = quests.find(q => q.definition.name === planetName);
     if (quest) {
       setActiveQuest(quest);
+      setCameraTarget({ planetName });
     }
   };
 
@@ -34,7 +42,9 @@ const QuestWorld = () => {
   }
 
   return (
-    <>
+    <div className="relative w-full h-screen">
+      <QuestMenu quests={quests} onQuestSelect={setCameraTarget} />
+
       {activeQuest && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm p-6 rounded-lg shadow-lg z-10 text-center">
           <h3 className="text-xl font-bold text-white mb-4">Quest Found: {activeQuest.definition.name}</h3>
@@ -53,8 +63,9 @@ const QuestWorld = () => {
           </button>
         </div>
       )}
-      <PlanetaryApp onPlanetClick={handlePlanetClick} />
-    </>
+
+      <PlanetaryApp onPlanetClick={handlePlanetClick} cameraTarget={cameraTarget} />
+    </div>
   );
 };
 

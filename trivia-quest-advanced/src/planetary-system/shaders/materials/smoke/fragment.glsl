@@ -1,13 +1,16 @@
-varying vec2 v_uv;
-uniform sampler2D map;
+// src/planetary-system/shaders/materials/smoke/fragment.glsl
 uniform float time;
+uniform sampler2D map; // This is our smoke_column.png texture
+
+varying vec2 vUv;
 
 void main() {
+    // Animate the UVs to make the smoke appear to rise
+    vec2 uv = vUv;
+    uv.y += time * 0.1; // Adjust 0.1 to change the speed
 
-    vec2 uv = v_uv;
-    uv.y -= 0.1 * time;
-    vec4 diffuse = texture2D(map, uv);
+    vec4 smokeColor = texture2D(map, uv);
 
-    gl_FragColor = vec4(diffuse.rgb, diffuse.a * sin(4.0 * v_uv.y));
-    #include <colorspace_fragment>
+    // Use the texture's alpha channel for transparency
+    gl_FragColor = vec4(smokeColor.rgb, smokeColor.a);
 }

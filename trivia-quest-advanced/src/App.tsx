@@ -63,7 +63,7 @@ const RouteRenderer = ({ routes }: { routes: Route[] }) => {
                   transition={{ duration: 0.3 }}
                   className="w-full h-full"
                 >
-                  {route.protected ? <PrivateRoute>{route.element}</PrivateRoute> : route.element}
+                  <>{route.protected ? <PrivateRoute>{route.element}</PrivateRoute> : route.element}</>
                 </motion.div>
               }
             />

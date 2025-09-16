@@ -3,19 +3,32 @@ import { useGLTF, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import Label from "../../ui/label/Label";
 import Smoke from "../../shaders/materials/smoke/Smoke";
+import * as THREE from "three";
+import { GLTF } from "three-stdlib";
 
 import React from 'react';
 
 interface EmberTwinProps {
     onPlanetClick: (planetName: string) => void;
-    [key: string]: any;
+    visible: boolean;
+    name: string;
+    position: [number, number, number];
 }
 
+type GLTFResult = GLTF & {
+    nodes: {
+        ["terrain-bottom"]: THREE.Mesh;
+        ["terrain-top"]: THREE.Mesh;
+        ["ember-structures"]: THREE.Mesh;
+    };
+    materials: Record<string, unknown>;
+};
+
 const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
-    const planet = useRef(null);
-    const { nodes, materials } = useGLTF(
+    const planet = useRef<THREE.Group>(null);
+    const { nodes } = useGLTF(
         "/planetary-system/planets/hourglass-twins/models/ember-twin.glb"
-    );
+    ) as unknown as GLTFResult;
 
     const terrainTop = useTexture(
         "/planetary-system/planets/hourglass-twins/textures/ember-terrain-top.webp"
@@ -28,10 +41,11 @@ const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
     );
     terrainTop.flipY = terrainBottom.flipY = structures.flipY = false;
 
-    useFrame(
-        (state, delta) =>
-            (planet.current.rotation.y = state.clock.elapsedTime * 0.1)
-    );
+    useFrame((state) => {
+        if (planet.current) {
+            planet.current.rotation.y = state.clock.elapsedTime * 0.1;
+        }
+    });
 
     return (
         <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick('Ember Twin')}>

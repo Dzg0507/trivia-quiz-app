@@ -1,5 +1,3 @@
-/* styles.css */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -42,14 +40,38 @@
     --color-accent: #ffff00;
   }
 
+  /* MODIFIED: Expanded body to cover html and #root for fullscreen support */
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevents unwanted scrollbars */
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-text);
-    min-height: 100vh;
+  }
+
+  /* ADDED: Ensure #root container is ready for z-index stacking */
+  #root {
+    position: relative;
+    z-index: 2;
   }
 }
 
 @layer components {
+  /* ADDED: Makes the canvas a fixed, fullscreen background */
+  .three-canvas {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Places the canvas behind the UI */
+  }
+
   .btn {
     @apply py-2 px-4 rounded-lg font-semibold transition-all duration-300 ease-in-out;
     background-color: var(--color-primary);

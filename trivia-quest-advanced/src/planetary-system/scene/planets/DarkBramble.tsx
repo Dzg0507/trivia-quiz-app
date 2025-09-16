@@ -1,17 +1,31 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useGLTF, useTexture } from "@react-three/drei";
+import * as THREE from "three";
+import { GLTF } from "three-stdlib";
 
 import React from 'react';
 
 interface DarkBrambleProps {
     onPlanetClick: (planetName: string) => void;
-    [key: string]: any;
+    visible: boolean;
+    name: string;
+    position: [number, number, number];
 }
 
+type GLTFResult = GLTF & {
+    nodes: {
+        ["bramble-seed"]: THREE.Mesh;
+        ["bramble-ice"]: THREE.Mesh;
+        ["bramble-vine"]: THREE.Mesh;
+        ["bramble-vine001"]: THREE.Mesh;
+    };
+    materials: Record<string, unknown>;
+};
+
 const DarkBramble: React.FC<DarkBrambleProps> = ({ onPlanetClick, ...props }) => {
-    const planet = useRef(null)
-    const { nodes, materials } = useGLTF("/planetary-system/planets/dark-bramble/models/dark-bramble.glb");
+    const planet = useRef<THREE.Group>(null);
+    const { nodes } = useGLTF("/planetary-system/planets/dark-bramble/models/dark-bramble.glb") as unknown as GLTFResult;
     const seed = useTexture("/planetary-system/planets/dark-bramble/textures/seed.webp")
     const ice = useTexture("/planetary-system/planets/dark-bramble/textures/ice.webp")
     const vines = useTexture("/planetary-system/planets/dark-bramble/textures/vines.webp")
@@ -19,7 +33,11 @@ const DarkBramble: React.FC<DarkBrambleProps> = ({ onPlanetClick, ...props }) =>
 
     seed.flipY = ice.flipY = vines.flipY = vines2.flipY = false
 
-    useFrame((state, delta) => planet.current.rotation.y = state.clock.elapsedTime * 0.1)
+    useFrame((state) => {
+        if (planet.current) {
+            planet.current.rotation.y = state.clock.elapsedTime * 0.1
+        }
+    })
 
     return (
         <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick('Dark Bramble')}>

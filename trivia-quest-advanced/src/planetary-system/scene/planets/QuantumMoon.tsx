@@ -3,16 +3,32 @@ import { useSolarSystemStore } from "../../States"
 import { useFrame, useThree } from "@react-three/fiber"
 import { CloudySurfaceMaterial } from "../../shaders/materials/cloudy-surface/CloudySurfaceMaterial";
 import Label from "../../ui/label/Label";
+import * as THREE from "three";
 import React from 'react';
 
+type CloudySurfaceMaterialType = THREE.ShaderMaterial & {
+    uniforms: {
+        time: { value: number };
+    }
+};
+
 function SurfaceMaterial(){
-    const matRef = useRef<any>(null)
-    useFrame((state, delta) => {
-        matRef.current.time = state.clock.elapsedTime
+    const matRef = useRef<CloudySurfaceMaterialType>(null)
+    useFrame((state) => {
+        if (matRef.current) {
+            matRef.current.uniforms.time.value = state.clock.elapsedTime
+        }
     })
 
+    const material = React.useMemo(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return new (CloudySurfaceMaterial as any)();
+    }, []);
+
     return (
-        <cloudySurfaceMaterial
+        <primitive
+            object={material}
+            attach="material"
             topColor={"#868686"}
             botColor={"#868686"}
             midColor1={"#525669"}
@@ -20,7 +36,6 @@ function SurfaceMaterial(){
             midColor3={"#525669"}
             octaves={2}
             intensity={0.35}
-            key={CloudySurfaceMaterial.key}
             ref={matRef}
         />
     )
@@ -28,19 +43,22 @@ function SurfaceMaterial(){
 
 interface QuantumMoonProps {
     onPlanetClick: (planetName: string) => void;
-    [key: string]: any;
+    name: string;
+    position: [number, number, number];
+    children?: React.ReactNode;
 }
 
-const QuantumMoon = forwardRef(function QuantumMoon({ onPlanetClick, ...props }, ref){
+const planets = ["hour", "timber", "brittle", "deep", "bramble"]
 
-    const focus = useSolarSystemStore((state: any) => state.focus)
-    const quantumObserved = useSolarSystemStore((state: any) => state.quantumObserved)
-    const setQuantumObserved = useSolarSystemStore((state: any) => state.setQuantumObserved)
+const QuantumMoon = forwardRef<THREE.Group, QuantumMoonProps>(function QuantumMoon({ onPlanetClick, children, ...props }, ref){
+
+    const focus = useSolarSystemStore((state) => state.focus)
+    const quantumObserved = useSolarSystemStore((state) => state.quantumObserved)
+    const setQuantumObserved = useSolarSystemStore((state) => state.setQuantumObserved)
     const [currentLocation, setLocation] = useState("deep")
-    const planets = ["hour", "timber", "brittle", "deep", "bramble"]
     const { scene } = useThree()
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (ref && 'current' in ref && ref.current) {
             ref.current.position.x = 10.0 * Math.sin(state.clock.elapsedTime * 0.1)
             ref.current.position.z = 10.0 * Math.cos(state.clock.elapsedTime * 0.1)
@@ -52,7 +70,7 @@ const QuantumMoon = forwardRef(function QuantumMoon({ onPlanetClick, ...props },
             ref.current.removeFromParent()
             scene.getObjectByName(currentLocation)?.add(ref.current)
         }
-    }, [])
+    }, [currentLocation, ref, scene])
 
     useEffect(() => {
         if (quantumObserved) {
@@ -64,8 +82,10 @@ const QuantumMoon = forwardRef(function QuantumMoon({ onPlanetClick, ...props },
                 const newLocation = scene.getObjectByName(
                     possibleOrbits[Math.floor(Math.random() * possibleOrbits.length)]
                 )
-                newLocation?.add(ref.current)
-                setLocation(newLocation.name)
+                if (newLocation) {
+                    newLocation.add(ref.current)
+                    setLocation(newLocation.name)
+                }
                 setQuantumObserved(false)
             }
         }
@@ -73,11 +93,11 @@ const QuantumMoon = forwardRef(function QuantumMoon({ onPlanetClick, ...props },
         if (ref && 'current' in ref && ref.current && ref.current.parent?.name === focus ) {
             setQuantumObserved(true)
         }
-    }, [focus])
+    }, [currentLocation, focus, quantumObserved, ref, scene, setQuantumObserved])
 
 
     return(
-        <group ref={ref} name="quantum" position={[-4,0,0]} onClick={() => onPlanetClick('Quantum Moon')}>
+        <group {...props} ref={ref} name="quantum" position={[-4,0,0]} onClick={() => onPlanetClick('Quantum Moon')}>
             <Label position={[0,1.2,0]} fontSize={0.1}>
                 Quantum Moon
             </Label>
@@ -85,6 +105,7 @@ const QuantumMoon = forwardRef(function QuantumMoon({ onPlanetClick, ...props },
                 <sphereGeometry />
                 <SurfaceMaterial />
             </mesh>
+            {children}
         </group>
     )
 })

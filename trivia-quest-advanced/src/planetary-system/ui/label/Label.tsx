@@ -1,14 +1,25 @@
 import { useFrame } from "@react-three/fiber";
 import { Text } from "@react-three/drei";
-import { useState, useEffect, useRef } from "react";
-import { Color } from "three";
+import { useRef } from "react";
+import * as THREE from "three";
 
-function Label({ children, ...props }){
+import React from 'react';
 
-    const textRef = useRef(null)
+interface LabelProps {
+    children: React.ReactNode;
+    position: [number, number, number];
+    fontSize: number;
+    maxWidth?: number;
+}
 
-    useFrame((state, delta) => {
-        textRef.current.lookAt(state.camera.position)
+function Label({ children, ...props }: LabelProps){
+
+    const textRef = useRef<THREE.Object3D>(null)
+
+    useFrame((state) => {
+        if (textRef.current) {
+            textRef.current.lookAt(state.camera.position)
+        }
     })
 
     return (
