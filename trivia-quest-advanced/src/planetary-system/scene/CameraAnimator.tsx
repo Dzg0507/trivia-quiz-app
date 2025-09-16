@@ -3,10 +3,10 @@ import { useEffect } from 'react';
 import * as THREE from 'three';
 import gsap from 'gsap';
 
-// Define the camera target type again
 type CameraTarget = {
   planetName: string;
   objectName?: string;
+  position?: [number, number, number];
 } | null;
 
 interface CameraAnimatorProps {
@@ -18,32 +18,35 @@ const CameraAnimator: React.FC<CameraAnimatorProps> = ({ target }) => {
 
   useEffect(() => {
     if (target) {
-      const targetObject = scene.getObjectByName(target.planetName);
+      const targetObject = target.objectName ? scene.getObjectByName(target.objectName) : scene.getObjectByName(target.planetName);
 
       if (targetObject) {
-        const planetPosition = new THREE.Vector3();
-        targetObject.getWorldPosition(planetPosition);
+        const targetPosition = new THREE.Vector3();
+        targetObject.getWorldPosition(targetPosition);
 
-        const finalPosition = target.position
-            ? planetPosition.add(new THREE.Vector3(...target.position))
-            : planetPosition;
+        const boundingBox = new THREE.Box3().setFromObject(targetObject);
+        const size = boundingBox.getSize(new THREE.Vector3());
+        const cameraOffset = Math.max(size.x, size.y, size.z) * 2;
+        const cameraPosition = targetPosition.clone().add(new THREE.Vector3(0, 0, cameraOffset));
 
         gsap.to(camera.position, {
-          duration: 0.5,
-          x: finalPosition.x + 5,
-          y: finalPosition.y + 2,
-          z: finalPosition.z + 5,
+          duration: 1.5,
+          x: cameraPosition.x,
+          y: cameraPosition.y,
+          z: cameraPosition.z,
           ease: 'power3.inOut',
+          onUpdate: () => {
+            camera.lookAt(targetPosition);
+          },
         });
 
         if (controls) {
-          // FIX: Updated the comment to satisfy the ESLint rule.
           // @ts-expect-error: The 'controls' object is generic, but we know it has a .target property.
           gsap.to(controls.target, {
-            duration: 0.5,
-            x: finalPosition.x,
-            y: finalPosition.y,
-            z: finalPosition.z,
+            duration: 1.5,
+            x: targetPosition.x,
+            y: targetPosition.y,
+            z: targetPosition.z,
             ease: 'power3.inOut',
           });
         }

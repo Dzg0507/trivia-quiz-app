@@ -38,34 +38,24 @@ import { useRef } from "react";
 import { useEffect } from "react";
 
 const Scene: React.FC<SceneProps> = ({ onPlanetClick, cameraTarget }) => {
-    const { scene, camera } = useThree();
-    const { selectedPlanet, nextQuestArea, previousQuestArea } = useSolarSystemStore();
-    const htmlRef = useRef<HTMLDivElement>(null);
-    const selectedPlanetRef = useRef<THREE.Object3D | null>(null);
+    const { scene } = useThree();
+    const { selectedPlanet, questAreaIndex, questAreas, nextQuestArea, previousQuestArea } = useSolarSystemStore();
+    const [selectedObject, setSelectedObject] = useState<THREE.Object3D | null>(null);
 
     useEffect(() => {
         if (selectedPlanet) {
-            selectedPlanetRef.current = scene.getObjectByName(selectedPlanet);
+            const planetObject = scene.getObjectByName(selectedPlanet);
+            if (questAreas.length > 0 && questAreaIndex !== null) {
+                const questArea = questAreas[questAreaIndex];
+                const questAreaObject = planetObject?.getObjectByName(questArea.name);
+                setSelectedObject(questAreaObject || planetObject);
+            } else {
+                setSelectedObject(planetObject || null);
+            }
         } else {
-            selectedPlanetRef.current = null;
+            setSelectedObject(null);
         }
-    }, [selectedPlanet, scene]);
-
-    useFrame(() => {
-        if (selectedPlanetRef.current && htmlRef.current) {
-            const position = new THREE.Vector3();
-            selectedPlanetRef.current.getWorldPosition(position);
-
-            const screenPosition = position.clone().project(camera);
-
-            htmlRef.current.style.top = `${(-screenPosition.y + 1) / 2 * window.innerHeight}px`;
-            htmlRef.current.style.left = `${(screenPosition.x + 1) / 2 * window.innerWidth}px`;
-            htmlRef.current.style.transform = 'translate(-50%, -50%)';
-            htmlRef.current.style.display = 'block';
-        } else if (htmlRef.current) {
-            htmlRef.current.style.display = 'none';
-        }
-    });
+    }, [selectedPlanet, questAreaIndex, questAreas, scene]);
 
     const handleNext = () => {
         nextQuestArea();
@@ -91,9 +81,13 @@ const Scene: React.FC<SceneProps> = ({ onPlanetClick, cameraTarget }) => {
             <CamControls />
             <CameraAnimator target={cameraTarget} />
 
-            <Html ref={htmlRef} style={{ display: 'none' }}>
-                <ArrowNavigation onNext={handleNext} onPrevious={handlePrevious} />
-            </Html>
+            {selectedObject && (
+                <group position={selectedObject.position}>
+                    <Html center>
+                        <ArrowNavigation onNext={handleNext} onPrevious={handlePrevious} />
+                    </Html>
+                </group>
+            )}
         </>
     );
 }

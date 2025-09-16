@@ -7,31 +7,44 @@ import TimberHearth from './planets/TimberHearth.tsx';
 import DarkBramble from './planets/DarkBramble.tsx';
 import QuantumMoon from './planets/QuantumMoon.tsx';
 import { useSolarSystemStore } from '../States';
+import { PLANET_DATA } from '../../config/planetData';
 
 interface SolarSystemProps {
   onPlanetClick: (planetName: string) => void;
   focus?: string | null;
 }
 
+const planetComponents: { [key: string]: React.FC<any> } = {
+    'Timber Hearth': TimberHearth,
+    'Ember Twin': EmberTwin,
+    'Ash Twin': AshTwin,
+    'Brittle Hollow': BrittleHollow,
+    'Giants Deep': GiantsDeep,
+    'Dark Bramble': DarkBramble,
+    'Quantum Moon': QuantumMoon,
+};
+
 const SolarSystem: React.FC<SolarSystemProps> = ({ onPlanetClick, focus }) => {
-  const { selectedPlanet } = useSolarSystemStore();
-  const isAnyPlanetFocused = focus !== null && focus !== undefined;
+    const { selectedPlanet } = useSolarSystemStore();
+    const isAnyPlanetFocused = focus !== null && focus !== undefined;
 
-  return (
-    <group>
-      {/* Planets are now positioned in a circle for better visibility */}
-      <group name="Hour" position={[30, 0, 52]}>
-        <EmberTwin onPlanetClick={onPlanetClick} visible={!isAnyPlanetFocused || focus === 'Ember Twin'} name="Ember Twin" position={[5, 0, 0]} selectedPlanet={selectedPlanet} />
-        <AshTwin onPlanetClick={onPlanetClick} visible={!isAnyPlanetFocused || focus === 'Ash Twin'} name="Ash Twin" position={[-5, 0, 0]} selectedPlanet={selectedPlanet} />
-      </group>
-
-      <TimberHearth position={[60, 0, 0]} visible={!isAnyPlanetFocused || focus === 'Timber Hearth'} name="Timber Hearth" onPlanetClick={onPlanetClick} selectedPlanet={selectedPlanet} />
-      <BrittleHollow position={[-12, 0, 58]} visible={!isAnyPlanetFocused || focus === 'Brittle Hollow'} name="Brittle Hollow" onPlanetClick={onPlanetClick} selectedPlanet={selectedPlanet} />
-      <GiantsDeep position={[-54, 0, 26]} visible={!isAnyPlanetFocused || focus === 'Giants Deep'} name="Giants Deep" onPlanetClick={onPlanetClick} selectedPlanet={selectedPlanet} />
-      <DarkBramble position={[-54, 0, -26]} visible={!isAnyPlanetFocused || focus === 'Dark Bramble'} name="Dark Bramble" onPlanetClick={onPlanetClick} selectedPlanet={selectedPlanet} />
-      <QuantumMoon position={[-12, 0, -58]} name="Quantum Moon" onPlanetClick={onPlanetClick} selectedPlanet={selectedPlanet} />
-    </group>
-  );
+    return (
+        <group>
+            {PLANET_DATA.map((planet) => {
+                const PlanetComponent = planetComponents[planet.name];
+                return PlanetComponent ? (
+                    <PlanetComponent
+                        key={planet.name}
+                        position={planet.position}
+                        visible={!isAnyPlanetFocused || focus === planet.name}
+                        name={planet.name}
+                        onPlanetClick={onPlanetClick}
+                        selectedPlanet={selectedPlanet}
+                    />
+                ) : null;
+            })}
+        </group>
+    );
 };
 
 export default SolarSystem;
