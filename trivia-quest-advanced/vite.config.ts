@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { visualizer } from 'rollup-plugin-visualizer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import glsl from 'vite-plugin-glsl';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +18,7 @@ export default defineConfig({
       gzipSize: true,
       brotliSize: true,
     }),
+    glsl(),
   ],
   resolve: {
     alias: {

@@ -1,0 +1,86 @@
+import { useRef } from "react";
+import { useGLTF, useTexture } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import Label from "../../ui/label/Label";
+import Smoke from "../../shaders/materials/smoke/Smoke";
+
+import React from 'react';
+
+interface EmberTwinProps {
+    onPlanetClick: (planetName: string) => void;
+    [key: string]: any;
+}
+
+const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
+    const planet = useRef(null);
+    const { nodes, materials } = useGLTF(
+        "/planetary-system/planets/hourglass-twins/models/ember-twin.glb"
+    );
+
+    const terrainTop = useTexture(
+        "/planetary-system/planets/hourglass-twins/textures/ember-terrain-top.webp"
+    );
+    const terrainBottom = useTexture(
+        "/planetary-system/planets/hourglass-twins/textures/ember-terrain-bottom.webp"
+    );
+    const structures = useTexture(
+        "/planetary-system/planets/hourglass-twins/textures/ember-structures.webp"
+    );
+    terrainTop.flipY = terrainBottom.flipY = structures.flipY = false;
+
+    useFrame(
+        (state, delta) =>
+            (planet.current.rotation.y = state.clock.elapsedTime * 0.1)
+    );
+
+    return (
+        <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick('Ember Twin')}>
+            <Label position={[2.75, -2.0, 2.0]} fontSize={0.1}>
+                Escape Pod 2
+            </Label>
+            <Label position={[0, -1.0, -4.0]} fontSize={0.1}>
+                Gravity Cannon
+            </Label>
+            <Label position={[-3.5, 1.0, 3.0]} fontSize={0.1}>
+                High Energy Lab
+            </Label>
+            <Label position={[0, -4.0, 0]} fontSize={0.1}>
+                Quantum Moon Locator
+            </Label>
+            <Label position={[0, 3.5, 0]} fontSize={0.1}>
+                Chert's Camp
+            </Label>
+
+            <mesh
+                geometry={nodes["terrain-bottom"].geometry}
+                rotation={[Math.PI / 2, 0, 0]}
+                scale={0.02}
+            >
+                <meshLambertMaterial map={terrainBottom} />
+            </mesh>
+            <mesh
+                geometry={nodes["terrain-top"].geometry}
+                rotation={[Math.PI / 2, 0, 0]}
+                scale={0.02}
+            >
+                <meshLambertMaterial map={terrainTop} />
+            </mesh>
+            <mesh
+                geometry={nodes["ember-structures"].geometry}
+                position={[0, 0.005, 0.001]}
+                scale={2}
+            >
+                <meshLambertMaterial map={structures} />
+            </mesh>
+
+            <Smoke position={[0, 5, 0]} scale={0.3} />
+        </group>
+    );
+}
+export default EmberTwin;
+useGLTF.preload("/planetary-system/planets/hourglass-twins/models/ember-twin.glb");
+useTexture.preload("/planetary-system/planets/hourglass-twins/textures/ember-terrain-top.webp");
+useTexture.preload(
+    "/planetary-system/planets/hourglass-twins/textures/ember-terrain-bottom.webp"
+);
+useTexture.preload("/planetary-system/planets/hourglass-twins/textures/ember-structures.webp");
