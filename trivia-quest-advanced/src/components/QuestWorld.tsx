@@ -10,19 +10,31 @@ type CameraTarget = {
   objectName?: string;
 } | null;
 
+import { useSolarSystemStore } from '../planetary-system/States';
+import { useEffect } from 'react';
+
 const QuestWorld = () => {
   const { quests, loading } = useQuestManager();
   const [activeQuest, setActiveQuest] = useState<QuestWithDefinition | null>(null);
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(null);
+
+  const { selectedPlanet, selectedQuestAreaIndex, questAreas, setSelectedPlanet } = useSolarSystemStore();
   const navigate = useNavigate();
 
   const handlePlanetClick = (planetName: string) => {
-    const quest = quests.find(q => q.definition.name === planetName);
-    if (quest) {
-      setActiveQuest(quest);
-      setCameraTarget({ planetName });
-    }
+    setSelectedPlanet(planetName);
+    setCameraTarget({ planetName });
+    setActiveQuest(null);
   };
+
+  useEffect(() => {
+    if (selectedPlanet && questAreas.length > 0) {
+      const questArea = questAreas[selectedQuestAreaIndex];
+      setCameraTarget({ planetName: selectedPlanet, objectName: questArea.name, position: questArea.position });
+      const quest = quests.find(q => q.definition.id === questArea.id);
+      setActiveQuest(quest || null);
+    }
+  }, [selectedPlanet, selectedQuestAreaIndex, questAreas, quests]);
 
   const startQuiz = () => {
     if (activeQuest) {
@@ -56,7 +68,10 @@ const QuestWorld = () => {
             Start Quiz
           </button>
           <button
-            onClick={() => setActiveQuest(null)}
+            onClick={() => {
+              setActiveQuest(null);
+              useSolarSystemStore.getState().setSelectedPlanet(null);
+            }}
             className="ml-4 px-6 py-3 bg-gray-600 text-white font-bold rounded-md hover:bg-gray-700 transition-colors duration-300"
           >
             Dismiss

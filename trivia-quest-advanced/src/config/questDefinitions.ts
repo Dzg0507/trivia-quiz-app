@@ -1,77 +1,22 @@
 import { Quest } from '../services/firestoreService';
+import { QUEST_AREAS } from './questAreaData';
 
-export const QUEST_DEFINITIONS: Quest[] = [
-  // Main Quests
-  {
-    id: 'main-quest-1',
-    name: 'Timber Hearth',
-    description: 'Explore Timber Hearth and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-2',
-    name: 'Ash Twin',
-    description: 'Explore Ash Twin and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-3',
-    name: 'Brittle Hollow',
-    description: 'Explore Brittle Hollow and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-4',
-    name: 'Ember Twin',
-    description: 'Explore Ember Twin and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-5',
-    name: 'Giants Deep',
-    description: 'Explore Giants Deep and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-6',
-    name: 'Dark Bramble',
-    description: 'Explore Dark Bramble and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
-  {
-    id: 'main-quest-7',
-    name: 'Quantum Moon',
-    description: 'Explore the Quantum Moon and take a quiz.',
-    category: 'Exploration',
-    theme: 'Main Story',
-    type: 'main',
-    conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
-    reward: 100,
-  },
+// Generate main quests from the quest area data
+const mainQuests: Quest[] = QUEST_AREAS.map(area => ({
+  id: area.id,
+  name: area.name,
+  description: area.description,
+  category: 'Exploration',
+  theme: 'Main Story',
+  type: 'main',
+  conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 0 }],
+  reward: 100,
+  planetName: area.planetName,
+  position: area.position,
+}));
+
+// Define other quests (daily, weekly, monthly)
+const otherQuests: Quest[] = [
   // Daily Quests
   {
     id: 'daily-quiz-1',
@@ -90,7 +35,7 @@ export const QUEST_DEFINITIONS: Quest[] = [
     category: 'General',
     theme: 'Daily Challenge',
     type: 'daily',
-    conditions: [{ stat: 'totalScore', operator: '>=', value: 50 }], // Assuming 10 points per correct answer
+    conditions: [{ stat: 'correctAnswers', operator: '>=', value: 5 }],
     reward: 30,
   },
 
@@ -124,7 +69,10 @@ export const QUEST_DEFINITIONS: Quest[] = [
     category: 'Mastery',
     theme: 'Monthly Milestones',
     type: 'monthly',
-    conditions: [{ stat: 'totalScore', operator: '>=', value: 1000 }],
+    conditions: [{ stat: 'correctAnswers', operator: '>=', value: 100 }],
     reward: 500,
   },
 ];
+
+// Combine all quests into a single export
+export const QUEST_DEFINITIONS: Quest[] = [...mainQuests, ...otherQuests];

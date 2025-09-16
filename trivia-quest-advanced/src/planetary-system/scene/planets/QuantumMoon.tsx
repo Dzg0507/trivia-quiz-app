@@ -46,17 +46,22 @@ interface QuantumMoonProps {
     name: string;
     position: [number, number, number];
     children?: React.ReactNode;
+    selectedPlanet: string | null;
 }
 
 const planets = ["hour", "timber", "brittle", "deep", "bramble"]
 
-const QuantumMoon = forwardRef<THREE.Group, QuantumMoonProps>(function QuantumMoon({ onPlanetClick, children, ...props }, ref){
+const QuantumMoon = forwardRef<THREE.Group, QuantumMoonProps>(function QuantumMoon({ onPlanetClick, name, children, selectedPlanet, ...props }, ref){
 
     const focus = useSolarSystemStore((state) => state.focus)
     const quantumObserved = useSolarSystemStore((state) => state.quantumObserved)
     const setQuantumObserved = useSolarSystemStore((state) => state.setQuantumObserved)
     const [currentLocation, setLocation] = useState("deep")
     const { scene } = useThree()
+
+    const { questAreas, selectedQuestAreaIndex } = useSolarSystemStore();
+    const isSelected = name === selectedPlanet;
+    const questArea = isSelected ? questAreas[selectedQuestAreaIndex] : null;
 
     useFrame((state) => {
         if (ref && 'current' in ref && ref.current) {
@@ -97,8 +102,8 @@ const QuantumMoon = forwardRef<THREE.Group, QuantumMoonProps>(function QuantumMo
 
 
     return(
-        <group {...props} ref={ref} name="quantum" position={[-4,0,0]} onClick={() => onPlanetClick('Quantum Moon')}>
-            <Label position={[0,1.2,0]} fontSize={0.1}>
+        <group {...props} ref={ref} name={name} position={[-4,0,0]} onClick={() => onPlanetClick(name)}>
+            <Label position={[0,1.2,0]} fontSize={0.1} isSelected={questArea?.name === 'Quantum Moon'}>
                 Quantum Moon
             </Label>
             <mesh scale={0.6}>

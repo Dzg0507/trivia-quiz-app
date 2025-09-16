@@ -13,6 +13,7 @@ interface GiantsDeepProps {
     visible: boolean;
     name: string;
     position: [number, number, number];
+    selectedPlanet: string | null;
 }
 
 type GLTFResult = GLTF & {
@@ -59,7 +60,9 @@ function Surface(){
     )
 }
 
-const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
+import { useSolarSystemStore } from '../../States';
+
+const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, name, selectedPlanet, ...props }) => {
     const planet = useRef<THREE.Group>(null)
     const { nodes } = useGLTF(
         "/planetary-system/planets/giants-deep/models/giants-deep.glb"
@@ -68,6 +71,10 @@ const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
     const opc = useTexture("/planetary-system/planets/giants-deep/textures/opc.webp");
     opc.flipY = false;
 
+    const { questAreas, selectedQuestAreaIndex } = useSolarSystemStore();
+    const isSelected = name === selectedPlanet;
+    const questArea = isSelected ? questAreas[selectedQuestAreaIndex] : null;
+
     useFrame((state) => {
         if (planet.current) {
             planet.current.rotation.y = state.clock.elapsedTime * 0.1
@@ -75,8 +82,8 @@ const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
     })
 
     return (
-        <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick('Giants Deep')}>
-            <Label position={[4.0,0.5,5.0]} fontSize={0.1}>
+        <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick(name)}>
+            <Label position={[4.0,0.5,5.0]} fontSize={0.1} isSelected={questArea?.name === 'Orbital Probe Cannon'}>
                 Orbital Probe Cannon
             </Label>
             <mesh
@@ -92,7 +99,7 @@ const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
                 rotation={[Math.PI / 2, 0, -Math.PI / 4]}
                 scale={0.005}
             >
-                <meshLambertMaterial map={opc} />
+                <meshLambertMaterial map={opc} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes.OPC_Cannon_Mid_Proxy.geometry}
@@ -100,7 +107,7 @@ const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
                 rotation={[Math.PI / 2, 0, -0.542]}
                 scale={0.005}
             >
-                <meshLambertMaterial map={opc} />
+                <meshLambertMaterial map={opc} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes.OPC_Cannon_Tip_Proxy.geometry}
@@ -108,7 +115,7 @@ const GiantsDeep: React.FC<GiantsDeepProps> = ({ onPlanetClick, ...props }) => {
                 rotation={[Math.PI / 2, 0, -0.363]}
                 scale={0.005}
             >
-                <meshLambertMaterial map={opc} />
+                <meshLambertMaterial map={opc} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
         </group>
     );

@@ -13,6 +13,7 @@ interface EmberTwinProps {
     visible: boolean;
     name: string;
     position: [number, number, number];
+    selectedPlanet: string | null;
 }
 
 type GLTFResult = GLTF & {
@@ -24,7 +25,9 @@ type GLTFResult = GLTF & {
     materials: Record<string, unknown>;
 };
 
-const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
+import { useSolarSystemStore } from '../../States';
+
+const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, name, selectedPlanet, ...props }) => {
     const planet = useRef<THREE.Group>(null);
     const { nodes } = useGLTF(
         "/planetary-system/planets/hourglass-twins/models/ember-twin.glb"
@@ -41,6 +44,10 @@ const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
     );
     terrainTop.flipY = terrainBottom.flipY = structures.flipY = false;
 
+    const { questAreas, selectedQuestAreaIndex } = useSolarSystemStore();
+    const isSelected = name === selectedPlanet;
+    const questArea = isSelected ? questAreas[selectedQuestAreaIndex] : null;
+
     useFrame((state) => {
         if (planet.current) {
             planet.current.rotation.y = state.clock.elapsedTime * 0.1;
@@ -48,20 +55,20 @@ const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
     });
 
     return (
-        <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick('Ember Twin')}>
-            <Label position={[2.75, -2.0, 2.0]} fontSize={0.1}>
+        <group {...props} dispose={null} ref={planet} onClick={() => onPlanetClick(name)}>
+            <Label position={[2.75, -2.0, 2.0]} fontSize={0.1} isSelected={questArea?.name === 'Escape Pod 2'}>
                 Escape Pod 2
             </Label>
-            <Label position={[0, -1.0, -4.0]} fontSize={0.1}>
+            <Label position={[0, -1.0, -4.0]} fontSize={0.1} isSelected={questArea?.name === 'Gravity Cannon'}>
                 Gravity Cannon
             </Label>
-            <Label position={[-3.5, 1.0, 3.0]} fontSize={0.1}>
+            <Label position={[-3.5, 1.0, 3.0]} fontSize={0.1} isSelected={questArea?.name === 'High Energy Lab'}>
                 High Energy Lab
             </Label>
-            <Label position={[0, -4.0, 0]} fontSize={0.1}>
+            <Label position={[0, -4.0, 0]} fontSize={0.1} isSelected={questArea?.name === 'Quantum Moon Locator'}>
                 Quantum Moon Locator
             </Label>
-            <Label position={[0, 3.5, 0]} fontSize={0.1}>
+            <Label position={[0, 3.5, 0]} fontSize={0.1} isSelected={questArea?.name === 'Chert\'s Camp'}>
                 Chert's Camp
             </Label>
 
@@ -70,21 +77,21 @@ const EmberTwin: React.FC<EmberTwinProps> = ({ onPlanetClick, ...props }) => {
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.02}
             >
-                <meshLambertMaterial map={terrainBottom} />
+                <meshLambertMaterial map={terrainBottom} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["terrain-top"].geometry}
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.02}
             >
-                <meshLambertMaterial map={terrainTop} />
+                <meshLambertMaterial map={terrainTop} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["ember-structures"].geometry}
                 position={[0, 0.005, 0.001]}
                 scale={2}
             >
-                <meshLambertMaterial map={structures} />
+                <meshLambertMaterial map={structures} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
 
             <Smoke position={[0, 5, 0]} scale={0.3} />

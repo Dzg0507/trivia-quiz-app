@@ -10,9 +10,10 @@ interface LabelProps {
     position: [number, number, number];
     fontSize: number;
     maxWidth?: number;
+    isSelected?: boolean;
 }
 
-function Label({ children, ...props }: LabelProps){
+function Label({ children, isSelected, ...props }: LabelProps){
 
     const textRef = useRef<THREE.Object3D>(null)
 
@@ -24,11 +25,12 @@ function Label({ children, ...props }: LabelProps){
 
     return (
         <Text
-        {...props}
-        font={'/planetary-system/fonts/SpaceMono-Regular.ttf'}
-        ref={textRef}
+            {...props}
+            font={'/planetary-system/fonts/SpaceMono-Regular.ttf'}
+            ref={textRef}
         >
             {children}
+            <meshStandardMaterial color={isSelected ? '#00ffff' : 'white'} emissive={isSelected ? '#00ffff' : 'black'} emissiveIntensity={isSelected ? 2 : 0} />
         </Text>
     )
 }

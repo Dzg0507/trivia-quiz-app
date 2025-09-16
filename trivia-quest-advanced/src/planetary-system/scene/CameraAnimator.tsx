@@ -21,14 +21,18 @@ const CameraAnimator: React.FC<CameraAnimatorProps> = ({ target }) => {
       const targetObject = scene.getObjectByName(target.planetName);
 
       if (targetObject) {
-        const targetPosition = new THREE.Vector3();
-        targetObject.getWorldPosition(targetPosition);
+        const planetPosition = new THREE.Vector3();
+        targetObject.getWorldPosition(planetPosition);
+
+        const finalPosition = target.position
+            ? planetPosition.add(new THREE.Vector3(...target.position))
+            : planetPosition;
 
         gsap.to(camera.position, {
-          duration: 2.5,
-          x: targetPosition.x + 5,
-          y: targetPosition.y + 2,
-          z: targetPosition.z + 5,
+          duration: 0.5,
+          x: finalPosition.x + 5,
+          y: finalPosition.y + 2,
+          z: finalPosition.z + 5,
           ease: 'power3.inOut',
         });
 
@@ -36,10 +40,10 @@ const CameraAnimator: React.FC<CameraAnimatorProps> = ({ target }) => {
           // FIX: Updated the comment to satisfy the ESLint rule.
           // @ts-expect-error: The 'controls' object is generic, but we know it has a .target property.
           gsap.to(controls.target, {
-            duration: 2.5,
-            x: targetPosition.x,
-            y: targetPosition.y,
-            z: targetPosition.z,
+            duration: 0.5,
+            x: finalPosition.x,
+            y: finalPosition.y,
+            z: finalPosition.z,
             ease: 'power3.inOut',
           });
         }

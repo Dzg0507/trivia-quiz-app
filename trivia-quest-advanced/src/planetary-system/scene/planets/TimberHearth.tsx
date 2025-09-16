@@ -12,6 +12,7 @@ interface TimberHearthProps {
     visible: boolean;
     name: string;
     position?: Vector3;
+    selectedPlanet: string | null;
 }
 
 type GLTFResult = GLTF & {
@@ -23,7 +24,9 @@ type GLTFResult = GLTF & {
 };
 
 // All props are now explicitly destructured from the function arguments
-const TimberHearth: React.FC<TimberHearthProps> = ({ onPlanetClick, name, visible, position }) => {
+import { useSolarSystemStore } from '../../States';
+
+const TimberHearth: React.FC<TimberHearthProps> = ({ onPlanetClick, name, visible, position, selectedPlanet }) => {
     const planet = useRef<THREE.Group>(null)
     const { nodes } = useGLTF(
         "/planetary-system/planets/timber-hearth/models/timber-hearth.glb"
@@ -36,6 +39,10 @@ const TimberHearth: React.FC<TimberHearthProps> = ({ onPlanetClick, name, visibl
     );
     terrain.flipY = false;
     structures.flipY = false;
+
+    const { questAreas, selectedQuestAreaIndex } = useSolarSystemStore();
+    const isSelected = name === selectedPlanet;
+    const questArea = isSelected ? questAreas[selectedQuestAreaIndex] : null;
 
     useFrame((state) => {
         if (planet.current) {
@@ -52,35 +59,34 @@ const TimberHearth: React.FC<TimberHearthProps> = ({ onPlanetClick, name, visibl
             ref={planet}
             onClick={(e) => {
                 e.stopPropagation();
-                console.log('Click registered on TimberHearth model!'); // Debug log
                 onPlanetClick(name);
             }}
             dispose={null}
         >
-            <Label position={[-2,4,0]} fontSize={0.15}>
+            <Label position={[-2,4,0]} fontSize={0.15} isSelected={questArea?.name === 'Youngbark Crater'}>
                 Youngbark Crater
             </Label>
-            <Label position={[0.1,0.1,4.5]} fontSize={0.15}>
+            <Label position={[0.1,0.1,4.5]} fontSize={0.15} isSelected={questArea?.name === 'The Village'}>
                 The Village
             </Label>
-            <Label position={[-5.0,0.0,0.0]} fontSize={0.15}>
+            <Label position={[-5.0,0.0,0.0]} fontSize={0.15} isSelected={questArea?.name === 'Geyser Mountains'}>
                 Geyser Mountains
             </Label>
-            <Label position={[3.0,3.5,1.0]} fontSize={0.15}>
+            <Label position={[3.0,3.5,1.0]} fontSize={0.15} isSelected={questArea?.name === 'Radio Tower'}>
                 Radio Tower
             </Label>
-            <Label position={[0,-4.2,0]} fontSize={0.15}>
+            <Label position={[0,-4.2,0]} fontSize={0.15} isSelected={questArea?.name === 'Quantum Grove'}>
                 Quantum Grove
             </Label>
-            <Label position={[3.5,0,-4.0]} fontSize={0.15}>
+            <Label position={[3.5,0,-4.0]} fontSize={0.15} isSelected={questArea?.name === 'Nomai Mines'}>
                 Nomai Mines
             </Label>
             {/* This JSX is the original, correct structure for your model */}
             <mesh scale={15} geometry={(nodes["timber-surface"] as THREE.Mesh).geometry}>
-                <meshLambertMaterial map={terrain} />
+                <meshLambertMaterial map={terrain} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh scale={15} geometry={(nodes["timber-structures"] as THREE.Mesh).geometry}>
-                <meshLambertMaterial map={structures} />
+                <meshLambertMaterial map={structures} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
         </group>
     )

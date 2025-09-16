@@ -23,13 +23,15 @@ export interface Quest {
   description: string;
   category: string;
   theme: string;
-  type: 'daily' | 'weekly' | 'monthly';
+  type: 'daily' | 'weekly' | 'monthly' | 'main';
   conditions: {
     stat: keyof UserStats;
     operator: '>=' | '<=' | '==';
     value: number;
   }[];
   reward: number;
+  planetName?: string;
+  position?: [number, number, number];
 }
 
 export interface UserQuest {

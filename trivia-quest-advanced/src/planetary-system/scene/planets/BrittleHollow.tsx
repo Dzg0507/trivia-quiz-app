@@ -12,6 +12,7 @@ interface BrittleHollowProps {
     visible: boolean;
     name: string;
     position?: Vector3;
+    selectedPlanet: string | null;
 }
 
 type GLTFResult = GLTF & {
@@ -29,11 +30,17 @@ type GLTFResult = GLTF & {
     materials: Record<string, unknown>;
 };
 
-const BrittleHollow: React.FC<BrittleHollowProps> = ({ onPlanetClick, name, visible, position }) => {
+import { useSolarSystemStore } from '../../States';
+
+const BrittleHollow: React.FC<BrittleHollowProps> = ({ onPlanetClick, name, visible, position, selectedPlanet }) => {
     const planet = useRef<THREE.Group>(null);
     const { nodes } = useGLTF(
         "/planetary-system/planets/brittle-hollow/models/brittle-hollow.glb"
     ) as unknown as GLTFResult;
+
+    const { questAreas, selectedQuestAreaIndex } = useSolarSystemStore();
+    const isSelected = name === selectedPlanet;
+    const questArea = isSelected ? questAreas[selectedQuestAreaIndex] : null;
 
     useFrame(
         (state) => {
@@ -78,22 +85,22 @@ const BrittleHollow: React.FC<BrittleHollowProps> = ({ onPlanetClick, name, visi
             }}
             dispose={null}
         >
-            <Label position={[1.0, 1.5, 0]} fontSize={0.1}>
+            <Label position={[1.0, 1.5, 0]} fontSize={0.1} isSelected={questArea?.name === 'Hanging City'}>
                 Hanging City
             </Label>
-            <Label position={[0, -4.5, 0]} fontSize={0.1}>
+            <Label position={[0, -4.5, 0]} fontSize={0.1} isSelected={questArea?.name === 'Southern Observatory'}>
                 Southern Observatory
             </Label>
-            <Label position={[0, 4.2, 0]} fontSize={0.1}>
+            <Label position={[0, 4.2, 0]} fontSize={0.1} isSelected={questArea?.name === 'Northern Glacier'}>
                 Northern Glacier
             </Label>
-            <Label position={[4.2, 0, 0]} fontSize={0.1}>
+            <Label position={[4.2, 0, 0]} fontSize={0.1} isSelected={questArea?.name === 'Gravity Cannon'}>
                 Gravity Cannon
             </Label>
-            <Label position={[0, 1.0, -4.5]} fontSize={0.1}>
+            <Label position={[0, 1.0, -4.5]} fontSize={0.1} isSelected={questArea?.name === 'Escape Pod 1'}>
                 Escape Pod 1
             </Label>
-            <Label position={[-1.0, -1.0, 0]} fontSize={0.1} maxWidth={15}>
+            <Label position={[-1.0, -1.0, 0]} fontSize={0.1} maxWidth={15} isSelected={questArea?.name === 'Tower of Quantum Knowledge'}>
                 Tower of Quantum Knowledge
             </Label>
             <mesh
@@ -101,63 +108,63 @@ const BrittleHollow: React.FC<BrittleHollowProps> = ({ onPlanetClick, name, visi
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={south} />
+                <meshLambertMaterial map={south} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["north-ice"].geometry}
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={north} />
+                <meshLambertMaterial map={north} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes.structures.geometry}
                 rotation={[1.911, -0.112, 1.66]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={structures} />
+                <meshLambertMaterial map={structures} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-1"].geometry}
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land1} />
+                <meshLambertMaterial map={land1} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-2"].geometry}
                 rotation={[-2.324, 1.251, -0.977]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land2} />
+                <meshLambertMaterial map={land2} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-3"].geometry}
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land3} />
+                <meshLambertMaterial map={land3} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-5"].geometry}
                 rotation={[Math.PI / 2, 0, 0]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land5} />
+                <meshLambertMaterial map={land5} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-4"].geometry}
                 rotation={[0.591, -0.038, -0.072]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land4} />
+                <meshLambertMaterial map={land4} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <mesh
                 geometry={nodes["land-piece-6"].geometry}
                 rotation={[-Math.PI, 0, -1.693]}
                 scale={0.012}
             >
-                <meshLambertMaterial map={land6} />
+                <meshLambertMaterial map={land6} emissive={isSelected ? 'yellow' : 'black'} emissiveIntensity={isSelected ? 0.5 : 0} />
             </mesh>
             <BlackHole />
         </group>

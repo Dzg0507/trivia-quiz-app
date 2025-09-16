@@ -9,6 +9,7 @@ import React from 'react';
 type CameraTarget = {
   planetName: string;
   objectName?: string;
+  position?: [number, number, number];
 } | null;
 
 interface PlanetaryAppProps {
