@@ -10,6 +10,7 @@ uniform vec3 botColor;
 uniform vec3 midColor1;
 uniform vec3 midColor2;
 uniform vec3 midColor3;
+uniform bool highlighted;
 
 
 float max3 (vec3 v) {
@@ -88,5 +89,10 @@ void main(){
     vec3 surface = generateSurface( pos );
 
     vec3 outColor = surface * intensity;
+
+    if (highlighted) {
+        outColor += vec3(0.2, 0.2, 0.0);
+    }
+
     gl_FragColor = vec4(outColor, 1.0);
 }

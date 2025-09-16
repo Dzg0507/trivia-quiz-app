@@ -28,9 +28,9 @@ function Label({ children, isSelected, ...props }: LabelProps){
             {...props}
             font={'/planetary-system/fonts/SpaceMono-Regular.ttf'}
             ref={textRef}
+            color={isSelected ? 'cyan' : 'white'}
         >
             {children}
-            <meshStandardMaterial color={isSelected ? '#00ffff' : 'white'} emissive={isSelected ? '#00ffff' : 'black'} emissiveIntensity={isSelected ? 2 : 0} />
         </Text>
     )
 }

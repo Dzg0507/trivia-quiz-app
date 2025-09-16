@@ -12,11 +12,12 @@ type CloudySurfaceMaterialType = THREE.ShaderMaterial & {
     }
 };
 
-function SurfaceMaterial(){
+function SurfaceMaterial({ highlighted }){
     const matRef = useRef<CloudySurfaceMaterialType>(null)
     useFrame((state) => {
         if (matRef.current) {
             matRef.current.uniforms.time.value = state.clock.elapsedTime
+            matRef.current.uniforms.highlighted.value = highlighted
         }
     })
 
@@ -108,7 +109,7 @@ const QuantumMoon = forwardRef<THREE.Group, QuantumMoonProps>(function QuantumMo
             </Label>
             <mesh scale={0.6}>
                 <sphereGeometry />
-                <SurfaceMaterial />
+                <SurfaceMaterial highlighted={isSelected} />
             </mesh>
             {children}
         </group>

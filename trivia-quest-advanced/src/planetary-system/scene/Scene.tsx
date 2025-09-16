@@ -33,27 +33,37 @@ interface SceneProps {
     cameraTarget: CameraTarget;
 }
 
+import { useRef } from "react";
+
+import { useEffect } from "react";
+
 const Scene: React.FC<SceneProps> = ({ onPlanetClick, cameraTarget }) => {
     const { scene, camera } = useThree();
-    const [arrowPosition, setArrowPosition] = useState<{ x: number; y: number } | null>(null);
     const { selectedPlanet, nextQuestArea, previousQuestArea } = useSolarSystemStore();
+    const htmlRef = useRef<HTMLDivElement>(null);
+    const selectedPlanetRef = useRef<THREE.Object3D | null>(null);
+
+    useEffect(() => {
+        if (selectedPlanet) {
+            selectedPlanetRef.current = scene.getObjectByName(selectedPlanet);
+        } else {
+            selectedPlanetRef.current = null;
+        }
+    }, [selectedPlanet, scene]);
 
     useFrame(() => {
-        if (selectedPlanet) {
-            const planetObject = scene.getObjectByName(selectedPlanet);
-            if (planetObject) {
-                const position = new THREE.Vector3();
-                planetObject.getWorldPosition(position);
+        if (selectedPlanetRef.current && htmlRef.current) {
+            const position = new THREE.Vector3();
+            selectedPlanetRef.current.getWorldPosition(position);
 
-                const screenPosition = position.clone().project(camera);
+            const screenPosition = position.clone().project(camera);
 
-                setArrowPosition({
-                    x: (screenPosition.x + 1) / 2 * window.innerWidth,
-                    y: (-screenPosition.y + 1) / 2 * window.innerHeight,
-                });
-            }
-        } else {
-            setArrowPosition(null);
+            htmlRef.current.style.top = `${(-screenPosition.y + 1) / 2 * window.innerHeight}px`;
+            htmlRef.current.style.left = `${(screenPosition.x + 1) / 2 * window.innerWidth}px`;
+            htmlRef.current.style.transform = 'translate(-50%, -50%)';
+            htmlRef.current.style.display = 'block';
+        } else if (htmlRef.current) {
+            htmlRef.current.style.display = 'none';
         }
     });
 
@@ -81,11 +91,9 @@ const Scene: React.FC<SceneProps> = ({ onPlanetClick, cameraTarget }) => {
             <CamControls />
             <CameraAnimator target={cameraTarget} />
 
-            {arrowPosition && (
-                <Html>
-                    <ArrowNavigation onNext={handleNext} onPrevious={handlePrevious} position={arrowPosition} />
-                </Html>
-            )}
+            <Html ref={htmlRef} style={{ display: 'none' }}>
+                <ArrowNavigation onNext={handleNext} onPrevious={handlePrevious} />
+            </Html>
         </>
     );
 }

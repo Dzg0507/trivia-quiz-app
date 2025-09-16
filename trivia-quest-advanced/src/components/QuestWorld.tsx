@@ -11,14 +11,14 @@ type CameraTarget = {
 } | null;
 
 import { useSolarSystemStore } from '../planetary-system/States';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const QuestWorld = () => {
   const { quests, loading } = useQuestManager();
   const [activeQuest, setActiveQuest] = useState<QuestWithDefinition | null>(null);
   const [cameraTarget, setCameraTarget] = useState<CameraTarget>(null);
 
-  const { selectedPlanet, selectedQuestAreaIndex, questAreas, setSelectedPlanet } = useSolarSystemStore();
+  const { selectedPlanet, selectedQuestAreaIndex, questAreas, setSelectedPlanet, isPlanetJustSelected } = useSolarSystemStore();
   const navigate = useNavigate();
 
   const handlePlanetClick = (planetName: string) => {
@@ -28,13 +28,18 @@ const QuestWorld = () => {
   };
 
   useEffect(() => {
+    if (isPlanetJustSelected) {
+        useSolarSystemStore.setState({ isPlanetJustSelected: false });
+        return;
+    }
+
     if (selectedPlanet && questAreas.length > 0) {
       const questArea = questAreas[selectedQuestAreaIndex];
       setCameraTarget({ planetName: selectedPlanet, objectName: questArea.name, position: questArea.position });
       const quest = quests.find(q => q.definition.id === questArea.id);
       setActiveQuest(quest || null);
     }
-  }, [selectedPlanet, selectedQuestAreaIndex, questAreas, quests]);
+  }, [selectedPlanet, selectedQuestAreaIndex, questAreas, quests, isPlanetJustSelected]);
 
   const startQuiz = () => {
     if (activeQuest) {

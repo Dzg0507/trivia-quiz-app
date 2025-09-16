@@ -13,6 +13,7 @@ const CloudySurfaceMaterial = shaderMaterial(
         midColor3: new THREE.Color(0.0, 0.0, 0.0),
         intensity: 0.0,
         octaves: 0,
+        highlighted: false,
     },
     vertexShader,
     fragmentShader
