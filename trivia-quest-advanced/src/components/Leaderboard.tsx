@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { firestoreService, LeaderboardEntry } from '../services/firestoreService.ts'; // Import LeaderboardEntry
 import { Trophy, XCircle } from 'lucide-react';
 import { motion } from 'framer-motion'; // Import motion
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
@@ -51,6 +52,7 @@ const Leaderboard = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate(); // Initialize useNavigate
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -99,6 +101,12 @@ const Leaderboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto mt-10 p-4">
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 left-4 z-20 px-4 py-2 bg-trivia-blue text-white rounded-md shadow-lg hover:bg-trivia-blue-dark transition-colors duration-300"
+      >
+        Back
+      </button>
       <h2 className="text-4xl font-bold text-trivia-gold mb-6 animate-pulse-glow">Leaderboard</h2>
       <LeaderboardTable leaderboard={leaderboard} />
     </div>

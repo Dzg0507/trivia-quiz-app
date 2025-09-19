@@ -1,4 +1,4 @@
-import { Quest } from '../services/firestoreService';
+import { Quest } from '../types/quests';
 import { QUEST_AREAS } from './questAreaData';
 
 // Generate main quests from the quest area data
@@ -9,6 +9,7 @@ const mainQuests: Quest[] = QUEST_AREAS.map(area => ({
   category: 'Exploration',
   theme: 'Main Story',
   type: 'main',
+  difficulty: 'medium', // Adding required difficulty field
   conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 0 }],
   reward: 100,
   planetName: area.planetName,
@@ -25,6 +26,7 @@ const otherQuests: Quest[] = [
     category: 'General',
     theme: 'Daily Challenge',
     type: 'daily',
+    difficulty: 'easy',
     conditions: [{ stat: 'totalQuizzes', operator: '>=', value: 1 }],
     reward: 20,
   },
@@ -35,6 +37,7 @@ const otherQuests: Quest[] = [
     category: 'General',
     theme: 'Daily Challenge',
     type: 'daily',
+    difficulty: 'easy',
     conditions: [{ stat: 'correctAnswers', operator: '>=', value: 5 }],
     reward: 30,
   },
@@ -47,6 +50,7 @@ const otherQuests: Quest[] = [
     category: 'Consistency',
     theme: 'Weekly Goals',
     type: 'weekly',
+    difficulty: 'medium',
     conditions: [{ stat: 'longestStreak', operator: '>=', value: 3 }],
     reward: 100,
   },
@@ -57,6 +61,7 @@ const otherQuests: Quest[] = [
     category: 'Performance',
     theme: 'Weekly Goals',
     type: 'weekly',
+    difficulty: 'medium',
     conditions: [{ stat: 'totalScore', operator: '>=', value: 500 }],
     reward: 150,
   },
@@ -69,6 +74,7 @@ const otherQuests: Quest[] = [
     category: 'Mastery',
     theme: 'Monthly Milestones',
     type: 'monthly',
+    difficulty: 'hard',
     conditions: [{ stat: 'correctAnswers', operator: '>=', value: 100 }],
     reward: 500,
   },

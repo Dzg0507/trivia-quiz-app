@@ -1,15 +1,33 @@
-import { useState, ReactNode } from 'react';
+import React, { useState, useEffect, createContext, ReactNode } from 'react';
+import { User, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase'; // Assuming you have a firebase.ts with auth export
 
-import { User } from 'firebase/auth';
+interface AuthContextType {
+  currentUser: User | null;
+  login: (user: User) => void;
+  logout: () => void;
+  loading: boolean; // Add loading state
+}
 
-import { AuthContext } from './AuthContext';
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null); // TODO: Use proper User type
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Initialize loading to true
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setLoading(false); // Set loading to false once auth state is determined
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const login = (user: User) => {
     setCurrentUser(user);
@@ -19,12 +37,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setCurrentUser(null);
   };
 
-  const value = { currentUser, login, logout };
+  const value = { currentUser, login, logout, loading };
   console.log('AuthContext value:', value);
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {children} {/* Always render children */}
     </AuthContext.Provider>
   );
 };

@@ -1,64 +1,46 @@
 import { db } from '../firebase.ts';
-import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, updateDoc, arrayUnion, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { Question } from '../types/trivia'; // Import Question interface
+import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, updateDoc, deleteDoc, onSnapshot, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase/firestore';
+import type { Question } from '../types/trivia'; // Import Question interface
 
-// Define interfaces for data structures
-export interface UserStats {
-  totalQuizzes: number;
-  totalScore: number;
-  bestScore: number;
-  averageAccuracy: number;
-  longestStreak: number;
-  correctAnswers: number;
-}
-
-export interface UserProfile {
-  avatar: string;
-  bio: string;
-}
-
+// Define Quest interface (moved from userServices or similar)
 export interface Quest {
   id: string;
   name: string;
   description: string;
   category: string;
   theme: string;
-  type: 'daily' | 'weekly' | 'monthly' | 'main';
-  conditions: {
-    stat: keyof UserStats;
-    operator: '>=' | '<=' | '==';
-    value: number;
-  }[];
+  type: 'daily' | 'weekly' | 'monthly';
+  difficulty: 'easy' | 'medium' | 'hard';
+  conditions: { stat: keyof UserStats; operator: '>=' | '<=' | '=='; value: number; }[];
   reward: number;
-  planetName?: string;
-  position?: [number, number, number];
 }
 
-export interface UserQuest {
-  questId: string;
-  progress: number;
-  completed: boolean;
-  claimed: boolean;
+// Define UserStats interface (moved from userServices or similar)
+export interface UserStats {
+  totalQuizzes: number;
+  totalScore: number;
+  bestScore: number;
+  averageAccuracy: number;
+  longestStreak: number;
+  // Add other stats as needed
 }
 
-export interface QuestWithDefinition extends UserQuest {
-  definition: Quest;
-}
-
-export interface UserData {
+// Define UserProfile interface
+export interface UserProfile {
   username: string;
-  createdAt: Date;
-  stats: UserStats;
-  profile: UserProfile;
-  achievements: string[];
-  quests: UserQuest[];
-  badges: string[];
-  lastQuestGeneration: {
-    daily: number; // timestamp
-    weekly: number; // timestamp
-    monthly: number; // timestamp
+  avatar: string;
+  bio: string;
+  // Add other profile fields as needed
+}
+
+// Define QuestWithDefinition interface
+export interface QuestWithDefinition extends Quest {
+  definition: {
+    name: string;
+    description: string;
+    icon: string;
+    color: string;
   };
-  // Add other fields as they appear in your user documents
 }
 
 export interface LeaderboardEntry {
@@ -86,147 +68,101 @@ export interface MultiplayerGameSession {
 }
 
 export const firestoreService = {
-  // Helper to get a document reference
-  getUserDocRef: (userId: string) => doc(db, 'users', userId),
   getGameDocRef: (gameId: string) => doc(db, 'multiplayerGames', gameId),
 
-  // Initialize user document on signup/login
-  initializeUserDoc: async (userId: string, initialData: Partial<UserData> = {}) => {
-    const userRef = firestoreService.getUserDocRef(userId);
+  // User Data Functions
+  getUserData: async (userId: string) => {
+    const userRef = doc(db, 'users', userId);
     const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      await setDoc(userRef, {
-        username: userId, // Or a default display name
-        createdAt: new Date(),
+    if (userSnap.exists()) {
+      return userSnap.data();
+    } else {
+      // Initialize user data if it doesn't exist
+      const initialUserData = {
+        username: 'New User', // Default username
         stats: {
           totalQuizzes: 0,
           totalScore: 0,
           bestScore: 0,
           averageAccuracy: 0,
           longestStreak: 0,
-          correctAnswers: 0,
         },
-        profile: {
-          avatar: '😊',
+        profile: { // Initialize profile
+          username: 'New User',
+          avatar: '',
           bio: '',
         },
-        achievements: [],
         quests: [],
-        lastQuestGeneration: {
-          daily: 0,
-          weekly: 0,
-          monthly: 0,
-        },
-        ...initialData
-      }, { merge: true });
-    }
-  },
-
-  // Get user data
-  getUserData: async (userId: string): Promise<UserData | null> => {
-    if (!userId) return null;
-    const docRef = firestoreService.getUserDocRef(userId);
-    const docSnap = await getDoc(docRef);
-    return docSnap.exists() ? (docSnap.data() as UserData) : null;
-  },
-
-  // Update user data
-  updateUserData: async (userId: string, dataToUpdate: Partial<UserData>) => {
-    if (!userId) return;
-    const docRef = firestoreService.getUserDocRef(userId);
-    await updateDoc(docRef, dataToUpdate);
-  },
-
-  // Get user stats
-  getUserStats: async (userId: string): Promise<UserStats | null> => {
-    const userData = await firestoreService.getUserData(userId);
-    return userData ? userData.stats : null;
-  },
-
-  // Update user stats
-  updateUserStats: async (userId: string, newStats: Partial<UserStats>) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    await updateDoc(userRef, { stats: newStats });
-  },
-
-  // Get profile settings
-  getProfileSettings: async (userId: string): Promise<UserProfile | null> => {
-    const userData = await firestoreService.getUserData(userId);
-    return userData ? userData.profile : null;
-  },
-
-  // Update profile settings
-  updateProfileSettings: async (userId: string, newSettings: Partial<UserProfile>) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    await updateDoc(userRef, { profile: newSettings });
-  },
-
-  // Get user achievements
-  getUserAchievements: async (userId: string): Promise<string[]> => {
-    const userData = await firestoreService.getUserData(userId);
-    return userData ? userData.achievements : [];
-  },
-
-  // Add achievement to user
-  addAchievementToUser: async (userId: string, achievementId: string) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    await updateDoc(userRef, {
-      achievements: arrayUnion(achievementId)
-    });
-  },
-
-  // Get user quests
-  getUserQuests: async (userId: string): Promise<UserQuest[]> => {
-    const userData = await firestoreService.getUserData(userId);
-    return userData ? userData.quests : [];
-  },
-
-  // Assign a quest to a user
-  assignQuestToUser: async (userId: string, quest: Quest) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    const newQuest: UserQuest = {
-      questId: quest.id,
-      progress: 0,
-      completed: false,
-      claimed: false,
-    };
-    await updateDoc(userRef, {
-      quests: arrayUnion(newQuest)
-    });
-  },
-
-  // Update a specific quest in the user's quests array
-  updateUserQuest: async (userId: string, updatedQuest: UserQuest) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    const userData = await firestoreService.getUserData(userId);
-    if (userData) {
-      const updatedQuests = userData.quests.map(q =>
-        q.questId === updatedQuest.questId ? updatedQuest : q
-      );
-      await updateDoc(userRef, { quests: updatedQuests });
-    }
-  },
-
-  // Claim reward for a completed quest
-  claimQuestReward: async (userId: string, quest: QuestWithDefinition) => {
-    const userRef = firestoreService.getUserDocRef(userId);
-    const userData = await firestoreService.getUserData(userId);
-    if (userData) {
-      const updatedQuest: UserQuest = {
-        questId: quest.questId,
-        progress: quest.progress,
-        completed: quest.completed,
-        claimed: true,
+        generatedQuests: [],
       };
-      const updatedQuests = userData.quests.map(q =>
-        q.questId === quest.questId ? updatedQuest : q
-      );
-      const newTotalScore = userData.stats.totalScore + quest.definition.reward;
+      await setDoc(userRef, initialUserData);
+      return initialUserData;
+    }
+  },
 
-      await updateDoc(userRef, {
-        quests: updatedQuests,
-        'stats.totalScore': newTotalScore,
-      });
+  updateUserData: async (userId: string, data: Partial<{ stats: UserStats; profile: UserProfile }>): Promise<void> => {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, data);
+  },
+
+  // Quest Functions
+  assignGeneratedQuestToUser: async (userId: string, quest: Quest): Promise<void> => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const currentGeneratedQuests = userData.generatedQuests || [];
+      const newGeneratedQuests = [...currentGeneratedQuests, { ...quest, progress: 0, completed: false }];
+      await updateDoc(userRef, { generatedQuests: newGeneratedQuests });
+    } else {
+      throw new Error('User not found.');
+    }
+  },
+
+  getUserQuests: async (userId: string): Promise<Quest[]> => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      return userSnap.data().quests || [];
+    }
+    return [];
+  },
+
+  getUserGeneratedQuests: async (userId: string): Promise<Quest[]> => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      return userSnap.data().generatedQuests || [];
+    }
+    return [];
+  },
+
+  updateUserQuest: async (userId: string, updatedQuest: Quest & { progress: number; completed: boolean }): Promise<void> => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const currentQuests = userData.quests || [];
+      const updatedQuests = currentQuests.map((q: Quest) => q.id === updatedQuest.id ? updatedQuest : q);
+      await updateDoc(userRef, { quests: updatedQuests });
+    } else {
+      throw new Error('User not found.');
+    }
+  },
+
+  updateGeneratedUserQuest: async (userId: string, updatedQuest: Quest & { progress: number; completed: boolean }): Promise<void> => {
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      const currentGeneratedQuests = userData.generatedQuests || [];
+      const updatedGeneratedQuests = currentGeneratedQuests.map((q: Quest) => q.id === updatedQuest.id ? updatedQuest : q);
+      await updateDoc(userRef, { generatedQuests: updatedGeneratedQuests });
+    } else {
+      throw new Error('User not found.');
     }
   },
 
@@ -235,7 +171,7 @@ export const firestoreService = {
     const usersCol = collection(db, 'users');
     const q = query(usersCol, orderBy('stats.totalScore', 'desc'), limit(topN));
     const userSnapshot = await getDocs(q);
-    const leaderboardData: LeaderboardEntry[] = userSnapshot.docs.map((doc, index) => ({
+    const leaderboardData: LeaderboardEntry[] = userSnapshot.docs.map((doc: QueryDocumentSnapshot, index: number) => ({
       id: doc.id,
       username: doc.data().username || doc.id,
       points: doc.data().stats.totalScore,
@@ -350,7 +286,7 @@ export const firestoreService = {
     if (player) {
       const newScore = isCorrect ? player.score + 1 : player.score;
       await updateDoc(gameRef, {
-        [`players.${userId}.score`]: newScore,
+        [`players.${userId}.score`]: newScore
       });
     }
   },
@@ -381,7 +317,7 @@ export const firestoreService = {
 
   listenToGameChanges: (gameId: string, callback: (_session: MultiplayerGameSession | null) => void): () => void => {
     const gameRef = firestoreService.getGameDocRef(gameId);
-    const unsubscribe = onSnapshot(gameRef, (docSnap) => {
+    const unsubscribe = onSnapshot(gameRef, (docSnap: DocumentSnapshot) => {
       if (docSnap.exists()) {
         callback(docSnap.data() as MultiplayerGameSession);
       } else {

@@ -3,7 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import React, { Suspense, ReactNode } from 'react';
 import { appRoutes } from './config/routes';
-import { AuthContext } from './context/AuthContext';
+import { AuthContext } from './context/AuthContext.tsx';
 import { User } from 'firebase/auth';
 
 // Mock components to isolate routing logic
@@ -17,7 +17,7 @@ const mockUser = { uid: 'test-uid', email: 'test@example.com' } as User;
 
 // Create a mock AuthProvider to wrap our components
 const MockAuthProvider = ({ user, children }: { user: User | null; children: ReactNode }) => (
-  <AuthContext.Provider value={{ currentUser: user, login: vi.fn(), logout: vi.fn() }}>
+  <AuthContext.Provider value={{ currentUser: user, login: vi.fn(), logout: vi.fn(), loading: false }}>
     {children}
   </AuthContext.Provider>
 );

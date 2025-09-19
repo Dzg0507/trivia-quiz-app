@@ -8,7 +8,9 @@ type Difficulty = 'easy' | 'medium' | 'hard';
 
 export const useQuizFlow = (
   onAnswerCallback: (_isCorrect: boolean) => void,
-  onQuizCompleteCallback: () => void
+  onQuizCompleteCallback: () => void,
+  initialCategory?: string,
+  initialTheme?: string
 ) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -18,14 +20,17 @@ export const useQuizFlow = (
   const [correctStreak, setCorrectStreak] = useState<number>(0);
   const [incorrectStreak, setIncorrectStreak] = useState<number>(0);
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [category, setCategory] = useState<string | undefined>(initialCategory);
+  const [theme, setTheme] = useState<string | undefined>(initialTheme);
   const [retryCount, setRetryCount] = useState(0);
   const { addNotification } = useNotifications();
 
-  const fetchQuestions = useCallback(async (currentDifficulty: Difficulty, signal: AbortSignal) => {
+  const fetchQuestions = useCallback(async (currentDifficulty: Difficulty, currentCategory: string | undefined, signal: AbortSignal) => {
     setIsLoading(true);
     setError(null);
+    console.log('Fetching questions with:', { currentDifficulty, currentCategory });
     try {
-      const response = await triviaApiService.fetchQuestions(10, 0, currentDifficulty, signal, addNotification);
+      const response = await triviaApiService.fetchQuestions(10, 0, currentDifficulty, currentCategory, signal, addNotification);
       if (response.status === 'success' && response.data) {
         setQuestions(response.data);
         setCurrentIndex(0);
@@ -42,7 +47,7 @@ export const useQuizFlow = (
     }
   }, [addNotification]);
 
-  // Fetch questions on initial load or when difficulty changes
+  // Fetch questions on initial load or when difficulty/category changes
   useEffect(() => {
     const abortController = new AbortController();
     const signal = abortController.signal;
@@ -52,12 +57,12 @@ export const useQuizFlow = (
     setCorrectStreak(0);
     setIncorrectStreak(0);
     setError(null);
-    fetchQuestions(difficulty, signal);
+    fetchQuestions(difficulty, category, signal);
 
     return () => {
       abortController.abort();
     };
-  }, [fetchQuestions, difficulty, retryCount]);
+  }, [fetchQuestions, difficulty, category, retryCount]);
 
   const adjustDifficulty = useCallback((isCorrect: boolean, newCorrectStreak: number, newIncorrectStreak: number) => {
     if (isCorrect) {
@@ -121,15 +126,21 @@ export const useQuizFlow = (
     [questions, currentIndex, correctStreak, incorrectStreak, onAnswerCallback, onQuizCompleteCallback, adjustDifficulty]
   );
 
-  const resetQuiz = useCallback(() => {
+  const startQuiz = useCallback((newCategory?: string, newTheme?: string, newDifficulty: Difficulty = 'easy') => {
+    setCategory(newCategory);
+    setTheme(newTheme);
+    setDifficulty(newDifficulty);
     setQuestions([]);
     setCurrentIndex(0);
     setCorrectStreak(0);
     setIncorrectStreak(0);
-    setDifficulty('easy');
     setError(null);
-    setRetryCount(c => c + 1);
+    setRetryCount(c => c + 1); // Trigger useEffect to fetch new questions
   }, []);
+
+  const resetQuiz = useCallback(() => {
+    startQuiz(initialCategory, initialTheme, 'easy'); // Reset to initial or default values
+  }, [initialCategory, initialTheme, startQuiz]);
 
   const currentQuestion = questions[currentIndex];
   const quizCompleted = currentIndex >= questions.length && questions.length > 0;
@@ -145,5 +156,6 @@ export const useQuizFlow = (
     quizCompleted,
     difficulty,
     selectedAnswer,
+    startQuiz,
   };
 };

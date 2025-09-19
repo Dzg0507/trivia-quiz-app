@@ -1,5 +1,6 @@
-import { auth } from '../firebase.ts';
+import { auth, db } from '../firebase.ts';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthResult {
   success: boolean;
@@ -8,34 +9,72 @@ interface AuthResult {
 }
 
 export const authService = {
-  signup: async (email: string, password: string): Promise<AuthResult> => {
+  async signUp(email: string, password: string): Promise<AuthResult> {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      return { success: true, message: 'Signup successful!', user: userCredential.user };
-    } catch (error: unknown) {
-      return { success: false, message: (error as Error).message };
+      const user = userCredential.user;
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        createdAt: new Date(),
+        stats: {
+          totalQuizzes: 0,
+          totalScore: 0,
+          bestScore: 0,
+          averageAccuracy: 0,
+          longestStreak: 0,
+          correctAnswers: 0
+        },
+        profile: {
+          avatar: '😊',
+          bio: ''
+        }
+      });
+      
+      return { success: true, user };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message || 'Failed to create account'
+      };
     }
   },
-
-  login: async (email: string, password: string): Promise<AuthResult> => {
+  
+  async signIn(email: string, password: string): Promise<AuthResult> {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      return { success: true, message: 'Login successful!', user: userCredential.user };
-    } catch (error: unknown) {
-      return { success: false, message: (error as Error).message };
+      return { success: true, user: userCredential.user };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message || 'Failed to sign in'
+      };
     }
   },
-
-  logout: async (): Promise<{ success: boolean; message?: string }> => {
+  
+  async signOut(): Promise<AuthResult> {
     try {
       await signOut(auth);
-      return { success: true, message: 'Logout successful!' };
-    } catch (error: unknown) {
-      return { success: false, message: (error as Error).message };
+      return { success: true };
+    } catch (error: any) {
+      return { 
+        success: false, 
+        message: error.message || 'Failed to sign out'
+      };
     }
   },
-
-  getCurrentUser: (): User | null => {
-    return auth.currentUser;
-  },
+  
+  async getUserProfile(userId: string) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        return userDoc.data();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+  }
 };

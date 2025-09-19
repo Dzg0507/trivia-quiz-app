@@ -1,0 +1,1 @@
+// This file is deprecated. All notification logic is now handled by src/context/NotificationContext.jsx

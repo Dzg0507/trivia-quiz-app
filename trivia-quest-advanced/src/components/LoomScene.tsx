@@ -2,6 +2,9 @@ import { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EffectComposer, Bloom, DepthOfField } from '@react-three/postprocessing';
+import { useGLTF, Center } from '@react-three/drei';
+import { useNavigate } from 'react-router-dom';
+import gsap from 'gsap';
 
 const vertexShader = `
   uniform float u_time;
@@ -103,10 +106,114 @@ const Particles = () => {
   );
 };
 
+const GlowButton = () => {
+  const { scene: wholeScene } = useGLTF('/models/glow-button.glb');
+  const { scene: fracturedScene, nodes: fracturedNodes } = useGLTF('/models/glow-button-fractures1.glb');
+  const navigate = useNavigate();
+  const [hovered, setHover] = useState(false);
+  const [exploded, setExploded] = useState(false);
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Standard rotation animation
+  useFrame((state, delta) => {
+    if (groupRef.current && !exploded) {
+      groupRef.current.rotation.y += 0.2 * delta;
+    }
+  });
+
+  // Handle click: trigger explosion
+  const handleClick = () => {
+    if (exploded) return;
+    setExploded(true);
+  };
+
+  // Explosion animation effect
+  useEffect(() => {
+    if (exploded) {
+      setHover(false);
+
+      const pieces = Object.values(fracturedNodes).filter(
+        (n) => n.type === 'Mesh'
+      ) as THREE.Mesh[];
+
+      pieces.forEach((piece) => {
+        if (Array.isArray(piece.material)) {
+            piece.material.forEach(m => { m.transparent = true; });
+        } else {
+            (piece.material as THREE.MeshStandardMaterial).transparent = true;
+        }
+
+        const direction = piece.position.clone().normalize();
+        const distance = 2 + Math.random() * 2; // Fly out between 2 and 4 units
+        const duration = 2.0 + Math.random() * 1.0; // Duration between 2 and 3 seconds
+
+        // Animate position
+        gsap.to(piece.position, {
+          x: piece.position.x + direction.x * distance,
+          y: piece.position.y + direction.y * distance,
+          z: piece.position.z + direction.z * distance,
+          duration: duration,
+          ease: 'expo.out', // A more dramatic ease
+        });
+
+        // Animate rotation
+        gsap.to(piece.rotation, {
+          x: (Math.random() - 0.5) * Math.PI * 2, // Tumble randomly
+          y: (Math.random() - 0.5) * Math.PI * 2,
+          z: (Math.random() - 0.5) * Math.PI * 2,
+          duration: duration,
+          ease: 'expo.out',
+        });
+
+        // Animate opacity
+        gsap.to(piece.material, {
+          opacity: 0,
+          duration: duration,
+          ease: 'power2.out', // Keep fade a bit simpler
+        });
+      });
+
+      // Navigate after the longest possible animation
+      gsap.to({}, {
+        duration: 3.5, // Was 3, longest piece animation is 3s now.
+        onComplete: () => navigate('/quests'),
+      });
+    }
+  }, [exploded, fracturedNodes, navigate]);
+
+  // Set cursor style on hover
+  useEffect(() => {
+    document.body.style.cursor = hovered && !exploded ? 'pointer' : 'auto';
+  }, [hovered, exploded]);
+
+  const scale = 0.33;
+
+  return (
+    <group ref={groupRef} position={[0, -0.7, 0]} rotation-z={Math.PI / 6}>
+      <Center>
+        <primitive
+          object={wholeScene}
+          visible={!exploded}
+          scale={hovered && !exploded ? scale * 1.2 : scale}
+          onPointerOver={() => !exploded && setHover(true)}
+          onPointerOut={() => !exploded && setHover(false)}
+          onClick={handleClick}
+        />
+        <primitive
+          object={fracturedScene}
+          visible={exploded}
+          scale={scale}
+        />
+      </Center>
+    </group>
+  );
+};
+
 const SceneContent = () => {
   return (
     <>
       <Particles />
+      <GlowButton />
     </>
   );
 };

@@ -45,6 +45,33 @@ interface TriviaApiConfig<T> {
   formatResponse: (data: T) => Question[];
 }
 
+const CATEGORY_MAP: { [key: string]: number } = {
+  "General Knowledge": 9,
+  "Books": 10,
+  "Film": 11,
+  "Music": 12,
+  "Musicals & Theatres": 13,
+  "Television": 14,
+  "Video Games": 15,
+  "Board Games": 16,
+  "Science & Nature": 17,
+  "Computers": 18,
+  "Mathematics": 19,
+  "Mythology": 20,
+  "Sports": 21,
+  "Geography": 22,
+  "History": 23,
+  "Politics": 24,
+  "Art": 25,
+  "Celebrities": 26,
+  "Animals": 27,
+  "Vehicles": 28,
+  "Comics": 29,
+  "Gadgets": 30,
+  "Anime & Manga": 31,
+  "Cartoon & Animations": 32,
+};
+
 // API configurations
 const APIs: Record<string, TriviaApiConfig<OpenTriviaApiResponse> | TriviaApiConfig<TriviaApiQuestionRaw[]>> = {
   OPEN_TRIVIA_DB: {
@@ -79,7 +106,8 @@ export const triviaApiService = {
   fetchQuestions: async (
     retries: number = 3,
     apiIndex: number = 0,
-    difficulty?: 'easy' | 'medium' | 'hard', // Added difficulty parameter
+    difficulty?: 'easy' | 'medium' | 'hard',
+    category?: string, // Added category parameter
     signal?: AbortSignal,
     addNotification?: (_message: string, _type?: NotificationType, _duration?: number) => void
   ): Promise<ApiResponse<Question[]>> => {
@@ -101,10 +129,21 @@ export const triviaApiService = {
         if (difficulty) {
           url += `&difficulty=${difficulty}`;
         }
+        if (category) {
+          const categoryId = CATEGORY_MAP[category];
+          if (categoryId) {
+            url += `&category=${categoryId}`;
+          } else {
+            console.warn(`Category "${category}" not found in Open Trivia DB map.`);
+          }
+        }
       } else if (currentApi.name === 'Trivia API') {
         url += `?limit=10&type=multiple`;
         if (difficulty) {
           url += `&difficulty=${difficulty}`;
+        }
+        if (category) {
+          url += `&categories=${category}`;
         }
       }
 
@@ -138,12 +177,12 @@ export const triviaApiService = {
           const delay = Math.min(6000 * Math.pow(2, 3 - retries), 60000); // Max 60 seconds delay
           addNotification?.(`Rate limited on ${currentApi.name}. Retrying in ${delay / 1000}s...`, 'warning');
           await new Promise(resolve => setTimeout(resolve, delay));
-          return triviaApiService.fetchQuestions(retries - 1, apiIndex, difficulty, signal, addNotification); // Pass difficulty
+          return triviaApiService.fetchQuestions(retries - 1, apiIndex, difficulty, category, signal, addNotification); // Pass difficulty and category
         } else {
           const nextApiIndex = apiIndex + 1;
           if (nextApiIndex < apiKeys.length) {
             addNotification?.(`${currentApi.name} exhausted, switching to ${APIs[apiKeys[nextApiIndex]].name}...`, 'info');
-            return triviaApiService.fetchQuestions(3, nextApiIndex, difficulty, signal, addNotification); // Pass difficulty
+            return triviaApiService.fetchQuestions(3, nextApiIndex, difficulty, category, signal, addNotification); // Pass difficulty and category
           }
         }
       }
@@ -151,12 +190,12 @@ export const triviaApiService = {
       if (retries > 0) {
         addNotification?.(`Retrying ${currentApi.name}...`, 'warning');
         await new Promise(resolve => setTimeout(resolve, 2000));
-        return triviaApiService.fetchQuestions(retries - 1, apiIndex, difficulty, signal, addNotification); // Pass difficulty
+        return triviaApiService.fetchQuestions(retries - 1, apiIndex, difficulty, category, signal, addNotification); // Pass difficulty and category
       } else {
         const nextApiIndex = apiIndex + 1;
         if (nextApiIndex < apiKeys.length) {
           addNotification?.(`${currentApi.name} failed, switching to ${APIs[apiKeys[nextApiIndex]].name}...`, 'info');
-          return triviaApiService.fetchQuestions(3, nextApiIndex, difficulty, signal, addNotification); // Pass difficulty
+          return triviaApiService.fetchQuestions(3, nextApiIndex, difficulty, category, signal, addNotification); // Pass difficulty and category
         }
         const finalError: ApiError = { message: 'All trivia APIs have failed after multiple retries.', code: 'ALL_APIS_FAILED' };
         logError(new Error(finalError.message), undefined, { ...finalError }, 'critical');
@@ -191,3 +230,4 @@ export const triviaApiService = {
     }
   }
 };
+

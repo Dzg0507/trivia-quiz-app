@@ -57,8 +57,9 @@ const StartScreen = () => {
       <div className="absolute inset-0 z-0">
         <LoomScene />
       </div>
-      <motion.div
+            <motion.div
         className="absolute inset-0 z-10 flex flex-col items-center justify-center"
+        style={{ pointerEvents: 'none' }}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -68,7 +69,7 @@ const StartScreen = () => {
           variants={titleContainerVariants}
           initial="hidden"
           animate="visible"
-          style={{ display: 'flex' }}
+          style={{ display: 'flex', pointerEvents: 'auto' }}
         >
           {title.split('').map((char, index) => (
             <motion.span
@@ -80,7 +81,7 @@ const StartScreen = () => {
             </motion.span>
           ))}
         </motion.h1>
-        <motion.div className="flex space-x-6" variants={itemVariants}>
+        <motion.div className="flex space-x-6" style={{ pointerEvents: 'auto' }} variants={itemVariants}>
           <motion.button
             className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
             whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.1)' }}
@@ -88,6 +89,14 @@ const StartScreen = () => {
             onClick={() => handleNavigate('/quests')}
           >
             START QUEST
+          </motion.button>
+          <motion.button
+            className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
+            whileHover={{ scale: 1.1, backgroundColor: 'rgba(255,255,255,0.1)' }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => handleNavigate('/quests/generate')}
+          >
+            QUEST GENERATOR
           </motion.button>
           <motion.button
             className="px-8 py-4 bg-transparent text-white rounded-md text-2xl border border-white threadbare-text"
